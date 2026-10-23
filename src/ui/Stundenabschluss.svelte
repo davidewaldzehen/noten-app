@@ -84,6 +84,18 @@
   }
 
   function bestaetigen() {
+    // Schutz vor einer versehentlich begonnenen Stunde: ohne jede Leistungsbeobachtung und Änderung bekämen alle ○.
+    const nichtsErfasst =
+      !bearbeiten &&
+      beobachtungen.every((b) => b.art !== 'leistung') &&
+      Object.values(eindruecke).every((e) => e.art === 'stufe' && e.stufe === 'o');
+    if (
+      nichtsErfasst &&
+      !confirm(
+        `In dieser Stunde wurde keine Leistung beobachtet. Alle Schüler bekämen ○ (zählt als ${String(daten.einstellungen.stufenNoten.o).replace('.', ',')}). Trotzdem abschließen?`,
+      )
+    )
+      return;
     const s = stunde ?? stundeBeginnen(lg.id);
     stundeAbschliessen(s, $state.snapshot(eindruecke), datum, gewicht);
     zeigeSnackbar(bearbeiten ? 'Stunde geändert.' : `Stunde vom ${kurzdatum(datum)} abgeschlossen.`);

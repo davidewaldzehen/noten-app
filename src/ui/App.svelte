@@ -16,7 +16,7 @@
   import LerngruppeEinstellungen from './LerngruppeEinstellungen.svelte';
   import Snackbar from './Snackbar.svelte';
 
-  laden().catch((e) => (ui.fehler = `Laden fehlgeschlagen: ${e}`));
+  laden().catch((e) => (ui.fehler = `Laden fehlgeschlagen: ${e instanceof Error ? e.message : e}`));
 
   const t = $derived(route.teile);
   const lg = $derived(t[0] === 'lg' ? lerngruppe(t[1]) : undefined);

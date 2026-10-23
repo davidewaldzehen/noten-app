@@ -3,6 +3,7 @@
   import type { Lerngruppe, Notenbereich } from '../domain/typen';
   import Kopf from './Kopf.svelte';
   import { geheZu } from './router.svelte';
+  import { zahlAusFeld } from './zahlfeld';
 
   let { lg }: { lg: Lerngruppe } = $props();
 
@@ -84,7 +85,9 @@
           step="5"
           value={Math.round(lg.anteilHj1 * 100)}
           onchange={(e) => {
-            lg.anteilHj1 = Math.min(100, Math.max(0, Number(e.currentTarget.value) || 0)) / 100;
+            const n = zahlAusFeld(e.currentTarget, { min: 0, max: 100 }, Math.round(lg.anteilHj1 * 100));
+            if (n === undefined) return;
+            lg.anteilHj1 = n / 100;
             speichern();
           }}
         />
@@ -101,7 +104,18 @@
         {#each lg.notenbereiche as b (b.id)}
           <tr>
             <td><input bind:value={b.name} onchange={speichern} /></td>
-            <td><input class="zahlfeld" type="number" min="0" bind:value={b.gewicht} onchange={speichern} /></td>
+            <td><input
+                class="zahlfeld"
+                type="number"
+                min="0"
+                value={b.gewicht}
+                onchange={(e) => {
+                  const n = zahlAusFeld(e.currentTarget, { min: 0 }, b.gewicht);
+                  if (n === undefined) return;
+                  b.gewicht = n;
+                  speichern();
+                }}
+              /></td>
             <td class="zahl">{prozent(b)} %</td>
             <td class="leise">{b.art === 'muendlich' ? 'Stundeneindrücke' : 'Leistungsnachweise'}</td>
             <td><button class="klein gefahr" onclick={() => bereichLoeschen(b)}>Entfernen</button></td>

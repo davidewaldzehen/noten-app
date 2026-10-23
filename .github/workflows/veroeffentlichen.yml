@@ -29,6 +29,15 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+      # Oberflächentests gegen genau die gebauten Dateien, die gleich veröffentlicht werden.
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: testergebnisse
+          path: test-results
+          retention-days: 7
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

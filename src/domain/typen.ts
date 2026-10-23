@@ -163,3 +163,13 @@ export const STANDARD_EINSTELLUNGEN: Einstellungen = {
   grenzfallBreite: 0.1,
   letzteSicherung: null,
 };
+
+/** Erlaubte Werte der Einstellungen. Gilt für die Eingabe und beim Laden gespeicherter Daten. */
+export const EINSTELLUNGEN_GRENZEN = {
+  stufenNote: { min: 1, max: 6 },
+  schwellePlusPlus: { min: 1, ganz: true },
+  schwelleMinusMinus: { max: -1, ganz: true },
+  haeufungAnzahl: { min: 2, ganz: true },
+  haeufungTage: { min: 1, ganz: true },
+  grenzfallBreite: { min: 0, max: 0.5 },
+} as const;

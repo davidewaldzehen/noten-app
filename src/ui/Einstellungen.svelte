@@ -12,27 +12,36 @@
     zeigeSnackbar,
   } from '../daten/store.svelte';
   import { datumVon, heute, langdatum } from '../domain/datum';
-  import { STUFEN } from '../domain/typen';
+  import { DatenFehler } from '../daten/migration';
+  import { EINSTELLUNGEN_GRENZEN, STUFEN, type Stufe } from '../domain/typen';
   import { STUFEN_ANZEIGE } from '../domain/vorschlag';
   import Kopf from './Kopf.svelte';
   import { stufenKlasse } from './stufen';
+  import { zahlAusFeld } from './zahlfeld';
 
   // abgeleitet, weil Wiederherstellen das ganze Einstellungsobjekt ersetzt
   const e = $derived(daten.einstellungen);
 
-  // Sicherung erstellen
+  // Sicherung erstellen: Das Passwort wird einmal festgelegt und auf dem Gerät gespeichert,
+  // damit eine Sicherung danach nur noch einen Tipp braucht.
   let passwort = $state('');
   let passwort2 = $state('');
+  let passwortAendern = $state(false);
+  let passwortSichtbar = $state(false);
   let arbeitet = $state(false);
   /** Fertig verschlüsselte Sicherung, die auf dem iPad noch per Tippen abgelegt werden muss. */
   let bereit = $state<string | null>(null);
 
+  const passwortEingeben = $derived(!daten.sicherungspasswort || passwortAendern);
+  const passwortGueltig = $derived(passwort.length >= 6 && passwort === passwort2);
+
   async function sichern() {
-    if (passwort.length < 6 || passwort !== passwort2) return;
+    if (passwortEingeben && !passwortGueltig) return;
     arbeitet = true;
     try {
-      const datei = await sicherungErstellen(passwort);
+      const datei = await sicherungErstellen(passwortEingeben ? passwort : undefined);
       passwort = passwort2 = '';
+      passwortAendern = false;
       // Das Verschlüsseln dauert etwas; danach erlaubt Safari das Teilen-Menü nur nach einem neuen Tippen.
       if (istIos) bereit = datei;
       else ablegen(datei);
@@ -63,7 +72,7 @@
       passwortWieder = '';
       datei = null;
     } catch (err) {
-      fehlerWieder = err instanceof SicherungsFehler ? err.message : `Fehler: ${err}`;
+      fehlerWieder = err instanceof SicherungsFehler || err instanceof DatenFehler ? err.message : `Fehler: ${err}`;
     } finally {
       arbeitet = false;
     }
@@ -82,12 +91,18 @@
     zeigeSnackbar('Archiv gelöscht.');
   }
 
-  function zahl(feld: 'schwellePlusPlus' | 'schwelleMinusMinus' | 'haeufungAnzahl' | 'haeufungTage' | 'grenzfallBreite', wert: string) {
-    const n = Number(wert.replace(',', '.'));
-    if (Number.isFinite(n)) {
-      e[feld] = n;
-      speichereEinstellungen();
-    }
+  function zahl(feld: Exclude<keyof typeof EINSTELLUNGEN_GRENZEN, 'stufenNote'>, ev: Event & { currentTarget: HTMLInputElement }) {
+    const n = zahlAusFeld(ev.currentTarget, EINSTELLUNGEN_GRENZEN[feld], e[feld]);
+    if (n === undefined) return;
+    e[feld] = n;
+    speichereEinstellungen();
+  }
+
+  function stufenNote(s: Stufe, ev: Event & { currentTarget: HTMLInputElement }) {
+    const n = zahlAusFeld(ev.currentTarget, EINSTELLUNGEN_GRENZEN.stufenNote, e.stufenNoten[s]);
+    if (n === undefined) return;
+    e.stufenNoten[s] = n;
+    speichereEinstellungen();
   }
 </script>
 
@@ -103,13 +118,32 @@
     <p class="leise">
       Letzte Sicherung: {e.letzteSicherung ? langdatum(datumVon(new Date(e.letzteSicherung))) : 'noch nie'}
     </p>
-    <div class="zeile unten">
-      <label>Passwort <input type="password" bind:value={passwort} autocomplete="new-password" /></label>
-      <label>Passwort wiederholen <input type="password" bind:value={passwort2} autocomplete="new-password" /></label>
-      <button class="primaer" onclick={sichern} disabled={arbeitet || passwort.length < 6 || passwort !== passwort2}>
-        {arbeitet ? 'Verschlüssele …' : 'Sicherung herunterladen'}
-      </button>
-    </div>
+    {#if passwortEingeben}
+      <p>
+        {passwortAendern ? 'Neues Passwort festlegen.' : 'Leg einmal ein Passwort fest.'} Es wird auf diesem Gerät gespeichert, damit jede weitere
+        Sicherung nur noch einen Tipp braucht. <strong>Schreib es dir auf:</strong> Geht das iPad verloren, brauchst du es, um die Sicherung auf
+        einem neuen Gerät zu öffnen.
+        {#if passwortAendern}Ältere Sicherungen lassen sich weiterhin nur mit dem alten Passwort öffnen.{/if}
+      </p>
+      <div class="zeile unten">
+        <label>Passwort <input type="password" bind:value={passwort} autocomplete="new-password" /></label>
+        <label>Passwort wiederholen <input type="password" bind:value={passwort2} autocomplete="new-password" /></label>
+        <button class="primaer" onclick={sichern} disabled={arbeitet || !passwortGueltig}>
+          {arbeitet ? 'Verschlüssele …' : 'Passwort speichern und sichern'}
+        </button>
+        {#if passwortAendern}<button onclick={() => ((passwortAendern = false), (passwort = passwort2 = ''))}>Abbrechen</button>{/if}
+      </div>
+    {:else}
+      <div class="zeile">
+        <button class="primaer" onclick={sichern} disabled={arbeitet}>{arbeitet ? 'Verschlüssele …' : 'Sicherung erstellen'}</button>
+        <span class="leise">mit dem gespeicherten Passwort</span>
+        <button class="klein" onclick={() => (passwortSichtbar = !passwortSichtbar)}>
+          {passwortSichtbar ? 'Passwort verbergen' : 'Passwort anzeigen'}
+        </button>
+        {#if passwortSichtbar}<code class="passwort">{daten.sicherungspasswort}</code>{/if}
+        <button class="klein" onclick={() => (passwortAendern = true)}>Passwort ändern</button>
+      </div>
+    {/if}
     {#if bereit}
       {@const datei = bereit}
       <p class="hinweis zeile">
@@ -143,8 +177,8 @@
             min="1"
             max="6"
             step="0.5"
-            bind:value={e.stufenNoten[s]}
-            onchange={speichereEinstellungen}
+            value={e.stufenNoten[s]}
+            onchange={(ev) => stufenNote(s, ev)}
           />
         </label>
       {/each}
@@ -153,17 +187,17 @@
     <h3>Vorschlag beim Stundenabschluss</h3>
     <p class="leise">Punkte pro Stunde: ++ = 2, + = 1, − = −1. Keine Beobachtung ergibt ○.</p>
     <div class="zeile">
-      <label>++ ab Punkten <input class="kurz" type="number" min="1" value={e.schwellePlusPlus} onchange={(ev) => zahl('schwellePlusPlus', ev.currentTarget.value)} /></label>
-      <label>−− ab Punkten <input class="kurz" type="number" max="-1" value={e.schwelleMinusMinus} onchange={(ev) => zahl('schwelleMinusMinus', ev.currentTarget.value)} /></label>
+      <label>++ ab Punkten <input class="kurz" type="number" min="1" value={e.schwellePlusPlus} onchange={(ev) => zahl('schwellePlusPlus', ev)} /></label>
+      <label>−− ab Punkten <input class="kurz" type="number" max="-1" value={e.schwelleMinusMinus} onchange={(ev) => zahl('schwelleMinusMinus', ev)} /></label>
     </div>
   </section>
 
   <section class="karte stapel">
     <h2>Hinweise</h2>
     <div class="zeile">
-      <label>Häufungshinweis ab <input class="kurz" type="number" min="2" value={e.haeufungAnzahl} onchange={(ev) => zahl('haeufungAnzahl', ev.currentTarget.value)} /></label>
-      <label>innerhalb von Tagen <input class="kurz" type="number" min="1" value={e.haeufungTage} onchange={(ev) => zahl('haeufungTage', ev.currentTarget.value)} /></label>
-      <label>Grenzfall: Abstand zu x,5 <input class="kurz" type="number" min="0" max="0.5" step="0.05" value={e.grenzfallBreite} onchange={(ev) => zahl('grenzfallBreite', ev.currentTarget.value)} /></label>
+      <label>Häufungshinweis ab <input class="kurz" type="number" min="2" value={e.haeufungAnzahl} onchange={(ev) => zahl('haeufungAnzahl', ev)} /></label>
+      <label>innerhalb von Tagen <input class="kurz" type="number" min="1" value={e.haeufungTage} onchange={(ev) => zahl('haeufungTage', ev)} /></label>
+      <label>Grenzfall: Abstand zu x,5 <input class="kurz" type="number" min="0" max="0.5" step="0.05" value={e.grenzfallBreite} onchange={(ev) => zahl('grenzfallBreite', ev)} /></label>
     </div>
   </section>
 
@@ -190,6 +224,11 @@
     font-weight: 700;
     font-size: 1.2rem;
     color: var(--s);
+  }
+
+  .passwort {
+    font-size: 1rem;
+    user-select: all;
   }
 
   .fehler {

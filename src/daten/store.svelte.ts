@@ -20,6 +20,7 @@ import {
   type Verhaltenskategorie,
 } from '../domain/typen';
 import { db } from './db';
+import { aufAktuellenStand, DATENVERSION, versionVon } from './migration';
 import { entschluessele, verschluessele, type Datenstand } from './sicherung';
 
 export const daten = $state({
@@ -31,6 +32,8 @@ export const daten = $state({
   nachweise: [] as Leistungsnachweis[],
   einstellungen: { ...STANDARD_EINSTELLUNGEN } as Einstellungen,
   fachvorlagen: [] as Fachvorlage[],
+  /** Passwort für Sicherungen; liegt nur auf diesem Gerät und gehört nicht in die Sicherung. */
+  sicherungspasswort: null as string | null,
 });
 
 /** Meldungen an die Oberfläche (Snackbar mit „Rückgängig“, Fehler). */
@@ -66,7 +69,7 @@ export function neueId(): Id {
 // ---------- Laden ----------
 
 export async function laden() {
-  const [schueler, lerngruppen, stunden, beobachtungen, nachweise, einst, vorlagen] = await Promise.all([
+  const [schueler, lerngruppen, stunden, beobachtungen, nachweise, einst, vorlagen, version, passwort] = await Promise.all([
     db.schueler.toArray(),
     db.lerngruppen.toArray(),
     db.stunden.toArray(),
@@ -74,14 +77,32 @@ export async function laden() {
     db.nachweise.toArray(),
     db.meta.get('einstellungen'),
     db.meta.get('fachvorlagen'),
+    db.meta.get('datenversion'),
+    db.meta.get('sicherungspasswort'),
   ]);
-  daten.schueler = schueler;
-  daten.lerngruppen = lerngruppen;
-  daten.stunden = stunden;
-  daten.beobachtungen = beobachtungen;
-  daten.nachweise = nachweise;
-  daten.einstellungen = { ...STANDARD_EINSTELLUNGEN, ...((einst?.wert as Einstellungen) ?? {}) };
-  daten.fachvorlagen = (vorlagen?.wert as Fachvorlage[]) ?? [];
+  const gespeicherteVersion = typeof version?.wert === 'number' ? version.wert : 1;
+  // Wirft bei unlesbaren Daten oder Daten einer neueren Version; dann wird nichts überschrieben.
+  const stand = aufAktuellenStand(
+    { schueler, lerngruppen, stunden, beobachtungen, nachweise, einstellungen: einst?.wert, fachvorlagen: vorlagen?.wert },
+    gespeicherteVersion,
+  );
+  if (!version || gespeicherteVersion < DATENVERSION) await schreibeAlles(stand);
+
+  // Eine offene Stunde ohne Beobachtungen bleibt nur von einem zurückgenommenen, versehentlichen Tipp übrig.
+  const leer = stand.stunden.filter((s) => !s.abgeschlossen && !stand.beobachtungen.some((b) => b.stundeId === s.id));
+  if (leer.length > 0) {
+    stand.stunden = stand.stunden.filter((s) => !leer.includes(s));
+    await db.stunden.bulkDelete(leer.map((s) => s.id));
+  }
+
+  daten.schueler = stand.schueler;
+  daten.lerngruppen = stand.lerngruppen;
+  daten.stunden = stand.stunden;
+  daten.beobachtungen = stand.beobachtungen;
+  daten.nachweise = stand.nachweise;
+  daten.einstellungen = stand.einstellungen;
+  daten.fachvorlagen = stand.fachvorlagen;
+  daten.sicherungspasswort = typeof passwort?.wert === 'string' ? passwort.wert : null;
   daten.geladen = true;
   // Bittet den Browser, die Daten nicht automatisch zu löschen.
   navigator.storage?.persist?.().catch(() => {});
@@ -283,8 +304,12 @@ export function beobachten(lgId: Id, schuelerId: Id, inhalt: Beobachtungsinhalt)
 }
 
 export function beobachtungLoeschen(id: Id) {
+  const stundeId = daten.beobachtungen.find((b) => b.id === id)?.stundeId;
   daten.beobachtungen = daten.beobachtungen.filter((b) => b.id !== id);
   db.beobachtungen.delete(id).catch(fehler);
+  // Ohne Beobachtungen keine offene Stunde: ein zurückgenommener, versehentlicher Tipp hinterlässt nichts.
+  const stunde = daten.stunden.find((s) => s.id === stundeId);
+  if (stunde && !stunde.abgeschlossen && beobachtungenVon(stunde.id).length === 0) stundeLoeschen(stunde.id);
 }
 
 export function stundeAbschliessen(stunde: Stunde, eindruecke: Record<Id, Eindruck>, datum: string, gewicht: number) {
@@ -351,22 +376,38 @@ function datenstand(): Datenstand {
   });
 }
 
-export async function sicherungErstellen(passwort: string): Promise<string> {
-  const datei = await verschluessele(datenstand(), passwort);
+function passwortMerken(passwort: string) {
+  daten.sicherungspasswort = passwort;
+  db.meta.put({ schluessel: 'sicherungspasswort', wert: passwort }).catch(fehler);
+}
+
+/** Erstellt eine Sicherung mit dem gespeicherten Passwort oder mit einem neuen, das dann gespeichert wird. */
+export async function sicherungErstellen(neuesPasswort?: string): Promise<string> {
+  const passwort = neuesPasswort ?? daten.sicherungspasswort;
+  if (!passwort) throw new Error('Für die Sicherung ist noch kein Passwort festgelegt.');
+  const datei = await verschluessele({ ...datenstand(), datenversion: DATENVERSION }, passwort);
+  if (neuesPasswort) passwortMerken(neuesPasswort);
   daten.einstellungen.letzteSicherung = Date.now();
   speichereEinstellungen();
   return datei;
 }
 
-/** Ersetzt alle Daten durch den Stand aus der Sicherung. */
+/**
+ * Ersetzt alle Daten durch den Stand aus der Sicherung. Die Sicherung wird vorher vollständig geprüft;
+ * ist sie unbrauchbar, bleiben die vorhandenen Daten unangetastet. Das Passwort wird für künftige Sicherungen übernommen.
+ */
 export async function sicherungWiederherstellen(dateiinhalt: string, passwort: string) {
-  const stand = await entschluessele(dateiinhalt, passwort);
-  await alleDatenErsetzen(stand);
+  const roh = await entschluessele(dateiinhalt, passwort);
+  const stand = aufAktuellenStand(roh, versionVon(roh));
+  await schreibeAlles(stand);
+  passwortMerken(passwort);
+  await laden();
 }
 
-export async function alleDatenErsetzen(stand: Datenstand) {
+/** Ersetzt den gesamten Inhalt der Datenbank. Das Sicherungspasswort bleibt erhalten. */
+async function schreibeAlles(stand: Datenstand) {
   await db.transaction('rw', [db.schueler, db.lerngruppen, db.stunden, db.beobachtungen, db.nachweise, db.meta], async () => {
-    await Promise.all([db.schueler.clear(), db.lerngruppen.clear(), db.stunden.clear(), db.beobachtungen.clear(), db.nachweise.clear(), db.meta.clear()]);
+    await Promise.all([db.schueler.clear(), db.lerngruppen.clear(), db.stunden.clear(), db.beobachtungen.clear(), db.nachweise.clear()]);
     await db.schueler.bulkPut(stand.schueler);
     await db.lerngruppen.bulkPut(stand.lerngruppen);
     await db.stunden.bulkPut(stand.stunden);
@@ -375,9 +416,9 @@ export async function alleDatenErsetzen(stand: Datenstand) {
     await db.meta.bulkPut([
       { schluessel: 'einstellungen', wert: stand.einstellungen },
       { schluessel: 'fachvorlagen', wert: stand.fachvorlagen },
+      { schluessel: 'datenversion', wert: DATENVERSION },
     ]);
   });
-  await laden();
 }
 
 /** Fügt einen Datenstand zu den vorhandenen Daten hinzu (z. B. Beispieldaten). */

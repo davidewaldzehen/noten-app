@@ -5,6 +5,7 @@
   import type { Id, Lerngruppe } from '../domain/typen';
   import Kopf from './Kopf.svelte';
   import { geheZu } from './router.svelte';
+  import { zahlAusFeld } from './zahlfeld';
 
   let { lg, nachweisId }: { lg: Lerngruppe; nachweisId: Id } = $props();
 
@@ -66,7 +67,18 @@
       </label>
       <label>
         Gewicht im Notenbereich
-        <input type="number" min="0" step="0.5" bind:value={nachweis.gewicht} onchange={speichern} />
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          value={nachweis.gewicht}
+          onchange={(e) => {
+            const n = zahlAusFeld(e.currentTarget, { min: 0 }, nachweis.gewicht);
+            if (n === undefined) return;
+            nachweis.gewicht = n;
+            speichern();
+          }}
+        />
       </label>
       <p class="leise">Gewicht 1 = normal, 0,5 = zählt halb.</p>
       <div class="auswertung">

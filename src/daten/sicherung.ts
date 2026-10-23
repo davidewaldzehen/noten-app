@@ -17,6 +17,8 @@ export interface Datenstand {
   nachweise: Leistungsnachweis[];
   einstellungen: Einstellungen;
   fachvorlagen: Fachvorlage[];
+  /** Form der Daten (siehe migration.ts); fehlt bei Sicherungen der ersten Version. */
+  datenversion?: number;
 }
 
 interface Sicherungsdatei {
@@ -73,8 +75,11 @@ export async function verschluessele(stand: Datenstand, passwort: string): Promi
 
 export class SicherungsFehler extends Error {}
 
-/** Entschlüsselt eine Sicherungsdatei. Wirft SicherungsFehler bei falschem Passwort oder fremder Datei. */
-export async function entschluessele(dateiinhalt: string, passwort: string): Promise<Datenstand> {
+/**
+ * Entschlüsselt eine Sicherungsdatei. Wirft SicherungsFehler bei falschem Passwort oder fremder Datei.
+ * Liefert den Datenstand ungeprüft; vor dem Verwenden muss er durch aufAktuellenStand (migration.ts).
+ */
+export async function entschluessele(dateiinhalt: string, passwort: string): Promise<unknown> {
   let datei: Sicherungsdatei;
   try {
     datei = JSON.parse(dateiinhalt);
@@ -93,5 +98,9 @@ export async function entschluessele(dateiinhalt: string, passwort: string): Pro
   } catch {
     throw new SicherungsFehler('Falsches Passwort – oder die Datei ist beschädigt.');
   }
-  return JSON.parse(new TextDecoder().decode(klartext));
+  try {
+    return JSON.parse(new TextDecoder().decode(klartext));
+  } catch {
+    throw new SicherungsFehler('Die Sicherungsdatei ist beschädigt.');
+  }
 }

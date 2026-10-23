@@ -13,7 +13,7 @@ Zum Ausprobieren: auf der Startseite **„Beispiel-Lerngruppe erzeugen“** (nur
 1. In **Safari** öffnen: https://davidewaldzehen.github.io/noten-app/
 2. **Teilen → Zum Home-Bildschirm**. Ab jetzt nur noch über das Symbol „Noten“ starten. Die App läuft dann auch ohne Internet.
 3. Daten nur in der App vom Home-Bildschirm eintragen: Safari-Tab und Home-Bildschirm-App haben getrennte Speicher, und Safari kann Daten normaler Webseiten nach 7 Tagen ohne Besuch löschen.
-4. Regelmäßig **Einstellungen → Sicherung** und die Datei „In Dateien sichern“ (z. B. iCloud Drive).
+4. Regelmäßig **Einstellungen → Sicherung** und die Datei „In Dateien sichern“ (z. B. iCloud Drive). Das Passwort legst du beim ersten Mal fest, danach merkt sich die App es. **Schreib es auf:** Ohne Passwort lässt sich die Sicherung auf einem neuen Gerät nicht öffnen.
 
 Veröffentlicht wird nur der Programmcode. Alles, was du einträgst, bleibt auf dem iPad. Neue Versionen kommen automatisch, sobald das iPad online ist, und gelten ab dem nächsten Start der App.
 
@@ -37,9 +37,16 @@ Reiter **Sitzplan → Plätze bearbeiten**:
 ```
 npm install
 npm run dev      # lokaler Server
-npm test         # Tests der Notenberechnung
+npm test         # Tests der Notenberechnung und Datenhaltung
+npm run test:e2e # klickt die gebaute App im Browser durch (Safari-Engine als iPad und Chromium)
 npm run check    # Typprüfung
 npm run build    # fertige Dateien in dist/
 ```
+
+Vor jeder Veröffentlichung laufen Typprüfung und beide Testarten; schlägt etwas fehl, bleibt die alte Version online.
+
+Ändert sich die Form der gespeicherten Daten, `DATENVERSION` in `src/daten/migration.ts` erhöhen und dort einen Umwandlungsschritt ergänzen. So bleiben vorhandene Daten und alte Sicherungen lesbar.
+
+Ideen für später: [docs/ideen.md](docs/ideen.md).
 
 Aufbau: `src/domain` (Fachlogik, getestet, ohne Oberfläche), `src/daten` (lokale Datenbank, Sicherung), `src/ui` (Svelte-Oberfläche).
