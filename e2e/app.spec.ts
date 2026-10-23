@@ -1,13 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /** Legt die Lerngruppe „7a Mathe“ mit drei Schülern an und öffnet den Unterricht. */
-async function lerngruppeAnlegen(page: Page) {
+async function lerngruppeAnlegen(page: Page, klasse = '') {
   await page.goto('./');
   await page.getByRole('link', { name: 'Neue Lerngruppe', exact: true }).click();
   await page.getByLabel('Name der Lerngruppe').fill('7a Mathe');
   await page.getByLabel('Fach').fill('Mathe');
   await page.getByRole('button', { name: 'Anlegen und Schüler hinzufügen' }).click();
   await page.locator('textarea').fill('Anna Müller\nBen Schulz\nClara Wolf');
+  if (klasse) await page.getByLabel('Klasse (falls nicht in der Liste)').fill(klasse);
   await page.getByRole('button', { name: '3 Schüler hinzufügen' }).click();
   await page.getByRole('link', { name: 'Unterricht' }).click();
 }
@@ -94,6 +95,38 @@ test('Notiz zu einem Schüler im Schülerbericht', async ({ page }) => {
   await page.getByRole('link', { name: 'Noten' }).click();
   await page.getByRole('link', { name: 'Schulz, Ben' }).click();
   await expect(page.getByText('Keine Notizen.')).toBeVisible();
+});
+
+test('Lerngruppe ins neue Schuljahr übernehmen', async ({ page }) => {
+  await lerngruppeAnlegen(page, '7a');
+  await schueler(page, 'Anna').click();
+  await page.getByRole('button', { name: 'Stunde abschließen' }).click();
+  await page.getByRole('button', { name: 'Alle bestätigen' }).click();
+
+  await page.getByRole('link', { name: 'Einstellungen' }).click();
+  await page.getByRole('button', { name: 'Ins neue Schuljahr übernehmen …' }).click();
+  await expect(page.getByLabel('Name der neuen Lerngruppe')).toHaveValue('8a Mathe');
+  const schuljahr = page.getByLabel('Neues Schuljahr');
+  await expect(schuljahr).toHaveValue(/^\d{4}\/\d{2}$/);
+  await page.getByRole('button', { name: 'Übernehmen und diese archivieren' }).click();
+  await expect(page.getByRole('status')).toContainText('„8a Mathe“ angelegt, „7a Mathe“ archiviert');
+
+  // Gleicher Sitzplan mit denselben Schülern, aber keine Stunden.
+  await expect(page.getByRole('heading', { name: '8a Mathe' })).toBeVisible();
+  await expect(schueler(page, 'Anna')).toBeVisible();
+  await expect(page.getByText('Tippen beginnt die Stunde')).toBeVisible();
+  await page.getByRole('link', { name: 'Stunden' }).click();
+  await expect(page.getByText('Noch keine Stunden')).toBeVisible();
+  await page.getByRole('link', { name: 'Schüler' }).click();
+  await expect(page.locator('input.klasse').first()).toHaveValue('8a');
+
+  // Die alte Lerngruppe liegt mit ihrer Stunde im Archiv.
+  await page.goto('./');
+  await page.getByText('Archiv (1)').click();
+  await page.getByRole('link', { name: /7a Mathe/ }).click();
+  await page.getByRole('link', { name: 'Stunden' }).click();
+  await expect(page.getByRole('heading', { name: '7a Mathe' })).toBeVisible();
+  await expect(page.getByText('Noch keine Stunden')).not.toBeVisible();
 });
 
 test('ein zurückgenommener Tipp hinterlässt keine offene Stunde', async ({ page }) => {

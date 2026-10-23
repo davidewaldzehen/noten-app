@@ -2,10 +2,6 @@
 
 Vorschläge aus dem Review vom 23.10.2026, noch nicht umgesetzt. Reihenfolge = vorgeschlagene Priorität.
 
-## Lerngruppe ins neue Schuljahr übernehmen
-
-Bisher gibt es am Schuljahresende nur „Archivieren“; im August müsste jede Lerngruppe neu angelegt werden. Ein Knopf „Ins neue Schuljahr übernehmen“ legt eine neue Lerngruppe an mit denselben Schülern, demselben Sitzplan, denselben Notenbereichen und Verhaltenskategorien, aber ohne Stunden, Beobachtungen und Leistungsnachweise. Die alte wird archiviert.
-
 ## Notenschlüssel und Rohpunkte für Klassenarbeiten
 
 Bei einem Leistungsnachweis Punkte statt Noten eintragen, die Note ergibt sich aus einem einstellbaren Notenschlüssel (Prozentgrenzen je Note, als Vorlage speicherbar). War schon im Grilling als „später“ vorgemerkt.

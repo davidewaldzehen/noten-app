@@ -87,7 +87,7 @@ Die aus den gewichteten Notenbereichen berechnete Gesamtnote eines Schülers in 
 _Avoid_: Endnote, Gesamtnote
 
 **Schuljahr**:
-Der Zeitraum, für den eine Lerngruppe besteht. Nach Ende des Schuljahres wird die Lerngruppe archiviert.
+Der Zeitraum, für den eine Lerngruppe besteht. Nach Ende des Schuljahres wird die Lerngruppe archiviert oder ins neue Schuljahr übernommen: Dabei entsteht eine neue Lerngruppe mit denselben Schülern, demselben Sitzplan, denselben Notenbereichen und Verhaltenskategorien, aber ohne Stunden, Beobachtungen, Leistungsnachweise, Zeugnisnoten und Notizen; die alte wird archiviert.
 
 **Bewertungszeitraum**:
 Das 1. oder 2. Halbjahr eines Schuljahres, getrennt durch ein Stichdatum. Jede Stunde und jeder Leistungsnachweis gehört über sein Datum zu genau einem Bewertungszeitraum.

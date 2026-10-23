@@ -3,6 +3,7 @@
 
 import { heute, schuljahrVon, standardBeginnHj2 } from '../domain/datum';
 import type { ImportZeile } from '../domain/import';
+import { hochzuzaehlendeSchueler, jahrgangHochzaehlen, lerngruppeFuersNeueSchuljahr } from '../domain/schuljahr';
 import { sitzplanAus } from '../domain/sitzplan';
 import {
   STANDARD_EINSTELLUNGEN,
@@ -205,6 +206,27 @@ export function fachvorlageSpeichern(fach: string, bereiche: Notenbereich[]) {
   if (i >= 0) daten.fachvorlagen[i] = vorlage;
   else daten.fachvorlagen.push(vorlage);
   db.meta.put({ schluessel: 'fachvorlagen', wert: snap(daten.fachvorlagen) }).catch(fehler);
+}
+
+/**
+ * Legt die Lerngruppe für das neue Schuljahr an (ohne Stunden, Beobachtungen und Leistungsnachweise) und archiviert die alte.
+ * Auf Wunsch wird die Klasse der Schüler hochgezählt, aber nur bei der ersten übernommenen Lerngruppe eines Schülers.
+ */
+export function insNeueSchuljahr(alt: Lerngruppe, name: string, schuljahr: string, klassenHochzaehlen: boolean): Lerngruppe {
+  if (klassenHochzaehlen) {
+    for (const id of hochzuzaehlendeSchueler(alt, daten.lerngruppen, schuljahr)) {
+      const s = schuelerMitId(id);
+      if (!s) continue;
+      s.klasse = jahrgangHochzaehlen(s.klasse);
+      speichereSchueler(s);
+    }
+  }
+  const neu = lerngruppeFuersNeueSchuljahr(snap(alt), name, schuljahr, neueId, Date.now());
+  daten.lerngruppen.push(neu);
+  speichereLerngruppe(neu);
+  alt.archiviert = true;
+  speichereLerngruppe(alt);
+  return lerngruppe(neu.id)!;
 }
 
 /** Löscht eine Lerngruppe mit allen Stunden, Beobachtungen und Leistungsnachweisen. */

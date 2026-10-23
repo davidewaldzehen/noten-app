@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { daten, fachvorlageSpeichern, lerngruppeLoeschen, neueId, speichereLerngruppe, zeigeSnackbar } from '../daten/store.svelte';
+  import { daten, fachvorlageSpeichern, insNeueSchuljahr, lerngruppeLoeschen, neueId, speichereLerngruppe, zeigeSnackbar } from '../daten/store.svelte';
+  import { jahrgangHochzaehlen, naechstesSchuljahr } from '../domain/schuljahr';
   import type { Lerngruppe, Notenbereich } from '../domain/typen';
   import Kopf from './Kopf.svelte';
   import { geheZu } from './router.svelte';
@@ -55,6 +56,21 @@
     lg.archiviert = !lg.archiviert;
     speichern();
     zeigeSnackbar(lg.archiviert ? 'Lerngruppe archiviert.' : 'Lerngruppe wieder aktiv.');
+  }
+
+  let uebernahme = $state<null | { name: string; schuljahr: string; klassen: boolean }>(null);
+
+  function uebernahmeVorbereiten() {
+    uebernahme = { name: jahrgangHochzaehlen(lg.name), schuljahr: naechstesSchuljahr(lg.schuljahr), klassen: true };
+  }
+
+  function uebernehmen() {
+    if (!uebernahme || !uebernahme.name.trim()) return;
+    const altName = lg.name;
+    const neu = insNeueSchuljahr(lg, uebernahme.name, uebernahme.schuljahr.trim(), uebernahme.klassen);
+    uebernahme = null;
+    geheZu(`lg/${neu.id}`);
+    zeigeSnackbar(`„${neu.name}“ angelegt, „${altName}“ archiviert.`, undefined, 4000);
   }
 
   async function loeschen() {
@@ -151,6 +167,30 @@
   </section>
 
   <section class="karte stapel">
+    <h2>Neues Schuljahr</h2>
+    <p class="leise">
+      Legt eine neue Lerngruppe an mit denselben Schülern, demselben Sitzplan, denselben Notenbereichen und Verhaltenskategorien – ohne Stunden,
+      Beobachtungen, Leistungsnachweise und Notizen. Diese Lerngruppe wird archiviert und bleibt lesbar.
+    </p>
+    {#if uebernahme}
+      <div class="felder">
+        <label>Name der neuen Lerngruppe <input bind:value={uebernahme.name} /></label>
+        <label>Neues Schuljahr <input bind:value={uebernahme.schuljahr} /></label>
+      </div>
+      <label class="haken">
+        <input type="checkbox" bind:checked={uebernahme.klassen} />
+        Klassen der Schüler hochzählen (7a → 8a). Gilt für den Schüler in allen Lerngruppen; wer schon mit einer anderen Lerngruppe übernommen wurde, wird nicht noch einmal hochgezählt.
+      </label>
+      <div class="zeile">
+        <button class="primaer" onclick={uebernehmen} disabled={!uebernahme.name.trim() || !uebernahme.schuljahr.trim()}>Übernehmen und diese archivieren</button>
+        <button onclick={() => (uebernahme = null)}>Abbrechen</button>
+      </div>
+    {:else}
+      <div><button onclick={uebernahmeVorbereiten}>Ins neue Schuljahr übernehmen …</button></div>
+    {/if}
+  </section>
+
+  <section class="karte stapel">
     <h2>Archiv und Löschen</h2>
     <p class="leise">Am Schuljahresende archivieren: Die Lerngruppe bleibt lesbar, im Unterricht wird nichts mehr erfasst.</p>
     <div class="zeile">
@@ -184,5 +224,16 @@
 
   .leer {
     flex: 1;
+  }
+
+  .haken {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .haken input {
+    margin-top: 0.2rem;
   }
 </style>
