@@ -25,7 +25,19 @@ const stand: Datenstand = {
   lerngruppen: [lerngruppe],
   stunden: [{ id: 'st', lerngruppeId: 'lg', datum: '2026-10-20', gewicht: 2, abgeschlossen: true, eindruecke: { s: { art: 'stufe', stufe: '+' } } }],
   beobachtungen: [{ id: 'b', stundeId: 'st', lerngruppeId: 'lg', schuelerId: 's', zeit: 1, art: 'leistung', stufe: '+' }],
-  nachweise: [{ id: 'n', lerngruppeId: 'lg', notenbereichId: 'ka', titel: 'KA 1', datum: '2026-10-21', gewicht: 1, noten: { s: '2-' } }],
+  nachweise: [
+    { id: 'n', lerngruppeId: 'lg', notenbereichId: 'ka', titel: 'KA 1', datum: '2026-10-21', gewicht: 1, noten: { s: '2-' } },
+    {
+      id: 'p',
+      lerngruppeId: 'lg',
+      notenbereichId: 'ka',
+      titel: 'KA 2',
+      datum: '2026-11-21',
+      gewicht: 1,
+      noten: { s: '1' },
+      punkte: { max: 40, schluessel: { grenzen: [90, 80, 65, 50, 25], tendenzen: false }, werte: { s: '38' } },
+    },
+  ],
   einstellungen: { ...STANDARD_EINSTELLUNGEN, letzteSicherung: 99 },
   fachvorlagen: [],
 };
@@ -69,6 +81,24 @@ describe('aufAktuellenStand', () => {
     expect(neu.stunden[0]).toMatchObject({ gewicht: 1, abgeschlossen: false, eindruecke: {} });
     expect(neu.einstellungen).toEqual(STANDARD_EINSTELLUNGEN);
     expect(neu.fachvorlagen).toEqual([]);
+  });
+
+  it('ergänzt Notenschlüssel und Punkteerfassung', () => {
+    const roh = structuredClone(stand) as any;
+    delete roh.einstellungen.schluesselvorlagen;
+    roh.nachweise[1].punkte.schluessel = { grenzen: [50, 60] };
+    roh.nachweise[1].punkte.werte = undefined;
+    roh.nachweise[0].punkte = { max: 'viel' };
+    const neu = aufAktuellenStand(roh, 1);
+    expect(neu.einstellungen.schluesselvorlagen).toEqual(STANDARD_EINSTELLUNGEN.schluesselvorlagen);
+    expect(neu.nachweise[1].punkte).toEqual({ max: 40, schluessel: { grenzen: [92, 81, 67, 50, 30], tendenzen: true }, werte: {} });
+    expect(neu.nachweise[0]).not.toHaveProperty('punkte');
+    expect(neu.nachweise[0].noten).toEqual({ s: '2-' });
+  });
+
+  it('verwirft unbrauchbare Schlüsselvorlagen', () => {
+    const roh = { ...stand, einstellungen: { ...stand.einstellungen, schluesselvorlagen: [{ name: 'Oberstufe', grenzen: [95, 80, 65, 50, 20] }, { name: 'kaputt', grenzen: [] }] } };
+    expect(aufAktuellenStand(roh, 1).einstellungen.schluesselvorlagen).toEqual([{ name: 'Oberstufe', grenzen: [95, 80, 65, 50, 20], tendenzen: true }]);
   });
 
   it('ersetzt ungültige Einstellungen durch Standardwerte', () => {

@@ -3,15 +3,20 @@
 // der einen Datenstand der vorigen Version umbaut. Alte Sicherungen bleiben so dauerhaft lesbar.
 
 import { heute, schuljahrVon, standardBeginnHj2 } from '../domain/datum';
+import { grenzenGueltig } from '../domain/notenschluessel';
 import {
   EINSTELLUNGEN_GRENZEN,
   STANDARD_EINSTELLUNGEN,
+  STANDARD_NOTENSCHLUESSEL,
   STUFEN,
   type Beobachtung,
   type Einstellungen,
   type Leistungsnachweis,
   type Lerngruppe,
+  type Notenschluessel,
   type Notiz,
+  type Punkteerfassung,
+  type Schluesselvorlage,
   type Schueler,
   type Stufe,
   type Stunde,
@@ -93,6 +98,11 @@ export function ergaenzeEinstellungen(roh: unknown): Einstellungen {
     haeufungAnzahl: zahlOder(e.haeufungAnzahl, s.haeufungAnzahl, g.haeufungAnzahl),
     haeufungTage: zahlOder(e.haeufungTage, s.haeufungTage, g.haeufungTage),
     grenzfallBreite: zahlOder(e.grenzfallBreite, s.grenzfallBreite, g.grenzfallBreite),
+    schluesselvorlagen: Array.isArray(e.schluesselvorlagen)
+      ? e.schluesselvorlagen
+          .filter((v: Roh) => istObjekt(v) && istText(v.name) && grenzenGueltig(v.grenzen))
+          .map((v: Roh): Schluesselvorlage => ({ ...v, ...ergaenzeSchluessel(v) }))
+      : structuredClone(s.schluesselvorlagen),
     letzteSicherung: typeof e.letzteSicherung === 'number' ? e.letzteSicherung : null,
   };
 }
@@ -156,12 +166,28 @@ function ergaenzeBeobachtung(b: Roh): Beobachtung {
   return { ...b, zeit: zahlOder(b.zeit, 0) };
 }
 
+function ergaenzeSchluessel(s: Roh): Notenschluessel {
+  if (!istObjekt(s) || !grenzenGueltig(s.grenzen)) return structuredClone(STANDARD_NOTENSCHLUESSEL);
+  return { grenzen: [...s.grenzen], tendenzen: s.tendenzen !== false };
+}
+
+/** Eine Punkteerfassung ohne gültige Höchstpunktzahl entfällt; die schon berechneten Noten bleiben. */
+function ergaenzePunkte(p: Roh): Punkteerfassung | undefined {
+  if (!istObjekt(p)) return undefined;
+  const max = zahlOder(p.max, 0, { min: 0 });
+  if (max <= 0) return undefined;
+  return { ...p, max, schluessel: ergaenzeSchluessel(p.schluessel), werte: istObjekt(p.werte) ? p.werte : {} };
+}
+
 function ergaenzeNachweis(n: Roh): Leistungsnachweis {
   pruefe(istObjekt(n) && istText(n.id) && istText(n.lerngruppeId) && istDatum(n.datum), 'Leistungsnachweis unvollständig');
+  const { punkte, ...rest } = n;
+  const p = ergaenzePunkte(punkte);
   return {
-    ...n,
+    ...rest,
     titel: istText(n.titel) ? n.titel : '',
     gewicht: zahlOder(n.gewicht, 1, { min: 0 }),
     noten: istObjekt(n.noten) ? n.noten : {},
+    ...(p ? { punkte: p } : {}),
   };
 }

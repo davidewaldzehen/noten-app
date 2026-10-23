@@ -6,6 +6,8 @@
     daten,
     datenHinzufuegen,
     lerngruppeLoeschen,
+    schluesselvorlageLoeschen,
+    schluesselvorlageVorbelegen,
     sicherungErstellen,
     sicherungWiederherstellen,
     speichereEinstellungen,
@@ -193,6 +195,33 @@
   </section>
 
   <section class="karte stapel">
+    <h2>Notenschlüssel</h2>
+    <p class="leise">
+      Vorlagen für Leistungsnachweise mit Punkten: Mindestprozent je Note. Die erste ist die Vorbelegung. Neue Vorlagen speicherst du beim
+      Leistungsnachweis.
+    </p>
+    {#if e.schluesselvorlagen.length === 0}
+      <p class="leise">Keine Vorlagen; neue Punkteerfassungen beginnen mit 92 / 81 / 67 / 50 / 30 %.</p>
+    {:else}
+      <table>
+        <tbody>
+          {#each e.schluesselvorlagen as v, i (v.name)}
+            <tr>
+              <td><strong>{v.name}</strong>{#if i === 0}<span class="leise"> (Vorbelegung)</span>{/if}</td>
+              <td class="zahl">{v.grenzen.map((g, n) => `${n + 1}: ${String(g).replace('.', ',')} %`).join(' · ')}</td>
+              <td class="leise">{v.tendenzen ? 'mit Tendenzen' : 'ganze Noten'}</td>
+              <td class="r">
+                {#if i > 0}<button class="klein" onclick={() => schluesselvorlageVorbelegen(i)}>Als Vorbelegung</button>{/if}
+                <button class="klein gefahr" onclick={() => confirm(`Vorlage „${v.name}“ löschen?`) && schluesselvorlageLoeschen(i)}>Löschen</button>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
+  </section>
+
+  <section class="karte stapel">
     <h2>Hinweise</h2>
     <div class="zeile">
       <label>Häufungshinweis ab <input class="kurz" type="number" min="2" value={e.haeufungAnzahl} onchange={(ev) => zahl('haeufungAnzahl', ev)} /></label>
@@ -218,6 +247,11 @@
 
   .kurz {
     width: 100px;
+  }
+
+  .r {
+    text-align: right;
+    white-space: nowrap;
   }
 
   .stufe {

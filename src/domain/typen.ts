@@ -129,6 +129,25 @@ export type Beobachtung =
 export type Verhaltensbeobachtung = Extract<Beobachtung, { art: 'verhalten' }>;
 export type Leistungsbeobachtung = Extract<Beobachtung, { art: 'leistung' }>;
 
+export interface Notenschluessel {
+  /** Mindestprozent für die Noten 1 bis 5, streng fallend; darunter 6. */
+  grenzen: number[];
+  /** Notenbereiche dritteln: oberes Drittel +, unteres Drittel −. */
+  tendenzen: boolean;
+}
+
+export interface Schluesselvorlage extends Notenschluessel {
+  name: string;
+}
+
+/** Rohpunkte eines Leistungsnachweises; die Noten ergeben sich daraus über den Notenschlüssel. */
+export interface Punkteerfassung {
+  max: number;
+  schluessel: Notenschluessel;
+  /** Eingetragene Punkte als Text, z. B. '23,5'. */
+  werte: Record<Id, string>;
+}
+
 export interface Leistungsnachweis {
   id: Id;
   lerngruppeId: Id;
@@ -137,8 +156,9 @@ export interface Leistungsnachweis {
   datum: Datum;
   /** Gewicht innerhalb des Notenbereichs, z. B. 1 oder 0,5. */
   gewicht: number;
-  /** Eingetragene Noten als Text, z. B. '2-'. */
+  /** Eingetragene Noten als Text, z. B. '2-'. Bei Punkteerfassung aus den Punkten berechnet. */
   noten: Record<Id, string>;
+  punkte?: Punkteerfassung;
 }
 
 export interface Einstellungen {
@@ -154,6 +174,8 @@ export interface Einstellungen {
   haeufungTage: number;
   /** Abstand zu x,5, innerhalb dessen eine Fachnote ein Grenzfall ist. */
   grenzfallBreite: number;
+  /** Gespeicherte Notenschlüssel; der erste ist die Vorbelegung für neue Punkteerfassungen. */
+  schluesselvorlagen: Schluesselvorlage[];
   /** Zeitpunkt der letzten Sicherung (ms) oder null. */
   letzteSicherung: number | null;
 }
@@ -163,6 +185,8 @@ export interface Fachvorlage {
   notenbereiche: Notenbereich[];
 }
 
+export const STANDARD_NOTENSCHLUESSEL: Notenschluessel = { grenzen: [92, 81, 67, 50, 30], tendenzen: true };
+
 export const STANDARD_EINSTELLUNGEN: Einstellungen = {
   stufenNoten: { '++': 1, '+': 2, o: 3, '-': 4, '--': 5 },
   schwellePlusPlus: 3,
@@ -170,6 +194,7 @@ export const STANDARD_EINSTELLUNGEN: Einstellungen = {
   haeufungAnzahl: 3,
   haeufungTage: 14,
   grenzfallBreite: 0.1,
+  schluesselvorlagen: [{ name: 'Standard', ...STANDARD_NOTENSCHLUESSEL }],
   letzteSicherung: null,
 };
 

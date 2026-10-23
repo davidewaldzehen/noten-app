@@ -129,6 +129,46 @@ test('Lerngruppe ins neue Schuljahr übernehmen', async ({ page }) => {
   await expect(page.getByText('Noch keine Stunden')).not.toBeVisible();
 });
 
+test('Klassenarbeit mit Punkten und Notenschlüssel', async ({ page }) => {
+  await lerngruppeAnlegen(page);
+  await page.getByRole('link', { name: 'Leistungsnachweise' }).click();
+  await page.getByRole('button', { name: '+ Neu' }).first().click();
+  await page.getByLabel('Höchstpunktzahl').fill('50');
+  await page.getByRole('button', { name: 'Punkte eintragen' }).click();
+
+  // Standard 92 / 81 / 67 / 50 / 30 % mit Tendenzen; die Grenze muss erreicht werden.
+  await page.getByLabel('Punkte Anna Müller').fill('46');
+  await page.getByLabel('Punkte Anna Müller').press('Enter');
+  await page.getByLabel('Punkte Ben Schulz').fill('45,5');
+  await page.getByLabel('Punkte Ben Schulz').press('Enter');
+  await page.getByLabel('Punkte Clara Wolf').fill('51');
+  await page.getByLabel('Punkte Clara Wolf').press('Enter');
+  const zeile = (name: string) => page.getByRole('row', { name: new RegExp(name) });
+  await expect(zeile('Müller, Anna')).toContainText('1−');
+  await expect(zeile('Schulz, Ben')).toContainText('2+');
+  await expect(zeile('Wolf, Clara')).toContainText('ungültig');
+
+  await page.getByLabel('1 ab %').fill('90');
+  await page.getByLabel('1 ab %').press('Tab');
+  await expect(zeile('Schulz, Ben')).toContainText('1−');
+  await page.getByLabel(/Tendenzen/).uncheck();
+  await expect(zeile('Müller, Anna')).toContainText('1,00');
+  await expect(page.locator('.punktetabelle').getByRole('row', { name: /^1 / })).toHaveText(/1\s*45/);
+
+  page.once('dialog', (d) => d.accept('Mathe Sek I'));
+  await page.getByRole('button', { name: 'Als Vorlage speichern' }).click();
+  await expect(page.getByRole('status')).toContainText('Vorlage „Mathe Sek I“ gespeichert');
+
+  await page.reload();
+  await expect(page.getByLabel('Punkte Anna Müller')).toHaveValue('46');
+  await page.getByRole('link', { name: 'Zurück' }).click();
+  await page.getByRole('link', { name: 'Noten' }).click();
+  await expect(zeile('Müller, Anna')).toContainText('1,00');
+
+  await page.goto('./#/einstellungen');
+  await expect(page.getByRole('row', { name: /Mathe Sek I/ })).toContainText('1: 90 %');
+});
+
 test('ein zurückgenommener Tipp hinterlässt keine offene Stunde', async ({ page }) => {
   await lerngruppeAnlegen(page);
 

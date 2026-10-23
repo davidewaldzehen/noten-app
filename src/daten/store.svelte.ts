@@ -3,10 +3,12 @@
 
 import { heute, schuljahrVon, standardBeginnHj2 } from '../domain/datum';
 import type { ImportZeile } from '../domain/import';
+import { notenAusPunkten } from '../domain/notenschluessel';
 import { hochzuzaehlendeSchueler, jahrgangHochzaehlen, lerngruppeFuersNeueSchuljahr } from '../domain/schuljahr';
 import { sitzplanAus } from '../domain/sitzplan';
 import {
   STANDARD_EINSTELLUNGEN,
+  STANDARD_NOTENSCHLUESSEL,
   type Beobachtung,
   type Eindruck,
   type Einstellungen,
@@ -16,6 +18,7 @@ import {
   type LeistungsStufe,
   type Lerngruppe,
   type Notenbereich,
+  type Notenschluessel,
   type Schueler,
   type Stunde,
   type Verhaltenskategorie,
@@ -373,6 +376,35 @@ export function nachweisLoeschen(id: Id) {
   db.nachweise.delete(id).catch(fehler);
 }
 
+/** Stellt einen Leistungsnachweis auf Rohpunkte um; vorbelegt mit der ersten Schlüsselvorlage. Bisherige Noten entfallen. */
+export function punkteEinschalten(n: Leistungsnachweis, max: number) {
+  const vorlage = daten.einstellungen.schluesselvorlagen[0];
+  const schluessel: Notenschluessel = vorlage ? { grenzen: [...vorlage.grenzen], tendenzen: vorlage.tendenzen } : snap(STANDARD_NOTENSCHLUESSEL);
+  n.punkte = { max, schluessel, werte: {} };
+  n.noten = {};
+  speichereNachweis(n);
+}
+
+/** Zurück zur Noteneingabe; die aus den Punkten berechneten Noten bleiben als eingetragene Noten stehen. */
+export function punkteAusschalten(n: Leistungsnachweis) {
+  delete n.punkte;
+  speichereNachweis(n);
+}
+
+export function punkteSetzen(n: Leistungsnachweis, schuelerId: Id, text: string) {
+  if (!n.punkte) return;
+  if (text.trim() === '') delete n.punkte.werte[schuelerId];
+  else n.punkte.werte[schuelerId] = text.trim();
+  punkteNeuBerechnen(n);
+}
+
+/** Berechnet die Noten neu, z. B. nach einer Änderung der Höchstpunktzahl oder des Notenschlüssels. */
+export function punkteNeuBerechnen(n: Leistungsnachweis) {
+  if (!n.punkte) return;
+  n.noten = notenAusPunkten(snap(n.punkte));
+  speichereNachweis(n);
+}
+
 export function zeugnisnoteSetzen(lg: Lerngruppe, zeitraum: 'hj1' | 'jahr', schuelerId: Id, note: number | undefined, begruendung?: string) {
   if (note === undefined) delete lg.zeugnisnoten[zeitraum][schuelerId];
   else lg.zeugnisnoten[zeitraum][schuelerId] = { note, begruendung: begruendung?.trim() || undefined };
@@ -409,6 +441,28 @@ export function notizLoeschen(lg: Lerngruppe, id: Id) {
 
 export function speichereEinstellungen() {
   db.meta.put({ schluessel: 'einstellungen', wert: snap(daten.einstellungen) }).catch(fehler);
+}
+
+/** Speichert einen Notenschlüssel als Vorlage; eine Vorlage gleichen Namens wird ersetzt. */
+export function schluesselvorlageSpeichern(name: string, s: Notenschluessel) {
+  const vorlage = { name: name.trim(), grenzen: [...s.grenzen], tendenzen: s.tendenzen };
+  const liste = daten.einstellungen.schluesselvorlagen;
+  const i = liste.findIndex((v) => v.name.toLowerCase() === vorlage.name.toLowerCase());
+  if (i >= 0) liste[i] = vorlage;
+  else liste.push(vorlage);
+  speichereEinstellungen();
+}
+
+export function schluesselvorlageLoeschen(i: number) {
+  daten.einstellungen.schluesselvorlagen.splice(i, 1);
+  speichereEinstellungen();
+}
+
+/** Macht eine Vorlage zur Vorbelegung für neue Punkteerfassungen. */
+export function schluesselvorlageVorbelegen(i: number) {
+  const [v] = daten.einstellungen.schluesselvorlagen.splice(i, 1);
+  daten.einstellungen.schluesselvorlagen.unshift(v);
+  speichereEinstellungen();
 }
 
 // ---------- Sicherung ----------

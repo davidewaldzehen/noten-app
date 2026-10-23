@@ -64,6 +64,14 @@ _Avoid_: Prüfung, Arbeit, Einzelnote
 **Tendenz**:
 Ein + oder − an der Note eines Leistungsnachweises (z. B. 2−). Zählt in der Rechnung als ±0,3 (2+ = 1,7; 2− = 2,3). Zeugnisnoten haben keine Tendenz.
 
+**Rohpunkte**:
+Die Punkte, die ein Schüler in einem Leistungsnachweis erreicht hat (in halben Schritten bis zur Höchstpunktzahl). Statt einer Note eingetragen; die Note ergibt sich über den Notenschlüssel.
+_Avoid_: Punktzahl (wenn die Note gemeint ist), BE
+
+**Notenschlüssel**:
+Die Prozentgrenzen, ab denen ein Leistungsnachweis mit Rohpunkten die Noten 1 bis 5 ergibt (darunter 6), wahlweise mit Tendenzen: jeder Notenbereich wird gedrittelt, oberes Drittel +, unteres Drittel − (kein 1+ und kein 6−). Eine Grenze muss erreicht werden. Vorbelegt mit 92 / 81 / 67 / 50 / 30 %, als Vorlage speicherbar.
+_Avoid_: Bewertungsschlüssel, Punkteschlüssel
+
 **Sicherung**:
 Eine mit Passwort verschlüsselte Datei mit allen Daten der App, aus der sich der vollständige Stand wiederherstellen lässt.
 _Avoid_: Backup, Export (Export meint Ausgaben für Menschen, nicht zur Wiederherstellung)
