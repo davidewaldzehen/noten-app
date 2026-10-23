@@ -1,6 +1,6 @@
 <script lang="ts">
   import { beispieldaten } from '../daten/beispiel';
-  import { daten, datenHinzufuegen, mitglieder, offeneStunde, schuelerMitId, zeigeSnackbar } from '../daten/store.svelte';
+  import { daten, datenHinzufuegen, markierungenUmschalten, mitglieder, offeneStunde, schuelerMitId, zeigeSnackbar } from '../daten/store.svelte';
   import { heute } from '../domain/datum';
   import { haeufungen } from '../domain/haeufung';
   import type { Lerngruppe, Verhaltensbeobachtung } from '../domain/typen';
@@ -82,7 +82,12 @@
     </div>
   {/if}
 
-  {#if hinweise.length > 0}
+  {#if hinweise.length > 0 && daten.einstellungen.markierungenVerbergen}
+    <div class="karte zeile">
+      <span class="leise">Hinweise zu Schülern sind verborgen.</span>
+      <button class="klein" onclick={markierungenUmschalten}>Markierungen zeigen</button>
+    </div>
+  {:else if hinweise.length > 0}
     <div class="karte stapel">
       <h2>Häufungshinweise</h2>
       <p class="leise">

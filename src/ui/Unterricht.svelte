@@ -4,7 +4,9 @@
     beobachten,
     beobachtungenVon,
     beobachtungLoeschen,
+    daten,
     lerngruppeBenutzt,
+    markierungenUmschalten,
     mitglieder,
     offeneStunde,
     stundeLoeschen,
@@ -31,6 +33,9 @@
   const schueler = $derived(mitglieder(lg));
   const namen = $derived(anzeigenamen(schueler));
   const ohnePlatz = $derived(schueler.filter((s) => !lg.sitzplan.plaetze.some((p) => p.schuelerId === s.id)));
+
+  // Am Beamer: keine Beobachtungen am Platz und keine Meldung, was festgehalten wurde.
+  const verbergen = $derived(daten.einstellungen.markierungenVerbergen);
 
   let menueFuer = $state<Id | null>(null);
 
@@ -60,7 +65,7 @@
       inhalt.art === 'leistung'
         ? symbol({ art: 'leistung', stufe: inhalt.stufe } as Beobachtung)
         : (lg.verhaltenskategorien.find((k) => k.id === inhalt.kategorieId)?.name ?? '');
-    zeigeSnackbar(`${was} für ${namen.get(schuelerId)}`, () => beobachtungLoeschen(id));
+    zeigeSnackbar(verbergen ? 'Festgehalten.' : `${was} für ${namen.get(schuelerId)}`, () => beobachtungLoeschen(id));
   }
 
   function waehle(schuelerId: Id, inhalt: Beobachtungsinhalt) {
@@ -76,6 +81,9 @@
 <div class="ansicht">
   <Kopf titel={lg.name} {lg} aktiv="">
     {#snippet aktionen()}
+      <button class:aktiv={verbergen} aria-pressed={verbergen} onclick={markierungenUmschalten}>
+        {verbergen ? 'Markierungen zeigen' : 'Markierungen verbergen'}
+      </button>
       <span class="leise status">
         {#if offen}
           {beobachtungen.length} Beobachtung{beobachtungen.length === 1 ? '' : 'en'}
@@ -107,13 +115,13 @@
             {@const pkt = punkte(leistungen(id))}
             <button
               class="sitz"
-              class:positiv={pkt > 0}
-              class:negativ={pkt < 0}
+              class:positiv={!verbergen && pkt > 0}
+              class:negativ={!verbergen && pkt < 0}
               use:druck={{ kurz: () => festhalten(id, { art: 'leistung', stufe: '+' }), lang: () => (menueFuer = id) }}
             >
               <span class="name">{namen.get(id)}</span>
               <span class="marken">
-                {#each vonSchueler(id) as b (b.id)}
+                {#each verbergen ? [] : vonSchueler(id) as b (b.id)}
                   <span class:verhalten={b.art === 'verhalten'} class:minus={b.art === 'leistung' && b.stufe === '-'}>{symbol(b)}</span>
                 {/each}
               </span>
@@ -134,7 +142,7 @@
             use:druck={{ kurz: () => festhalten(s.id, { art: 'leistung', stufe: '+' }), lang: () => (menueFuer = s.id) }}
           >
             {namen.get(s.id)}
-            {#each vonSchueler(s.id) as b (b.id)}<span>{symbol(b)}</span>{/each}
+            {#each verbergen ? [] : vonSchueler(s.id) as b (b.id)}<span>{symbol(b)}</span>{/each}
           </button>
         {/each}
       </div>
@@ -168,7 +176,7 @@
         {/each}
       </div>
     </div>
-    {#if vonSchueler(id).length > 0}
+    {#if !verbergen && vonSchueler(id).length > 0}
       <div class="stapel klein">
         <span class="leise">In dieser Stunde</span>
         <div class="zeile">
@@ -203,6 +211,11 @@
 
   .status {
     white-space: nowrap;
+  }
+
+  .aktiv {
+    background: var(--akzent-hell);
+    border-color: var(--akzent);
   }
 
   .archiv {

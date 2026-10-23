@@ -4,6 +4,7 @@
   import Start from './Start.svelte';
   import LerngruppeNeu from './LerngruppeNeu.svelte';
   import Einstellungen from './Einstellungen.svelte';
+  import Datenschutz from './Datenschutz.svelte';
   import Unterricht from './Unterricht.svelte';
   import Stundenabschluss from './Stundenabschluss.svelte';
   import Stundenliste from './Stundenliste.svelte';
@@ -37,6 +38,8 @@
   <LerngruppeNeu />
 {:else if t[0] === 'einstellungen'}
   <Einstellungen />
+{:else if t[0] === 'datenschutz'}
+  <Datenschutz />
 {:else if t[0] === 'lg' && lg}
   {#key lg.id + t.slice(2).join('/')}
     {#if t.length === 2}

@@ -38,7 +38,7 @@ const stand: Datenstand = {
       punkte: { max: 40, schluessel: { grenzen: [90, 80, 65, 50, 25], tendenzen: false }, werte: { s: '38' } },
     },
   ],
-  einstellungen: { ...STANDARD_EINSTELLUNGEN, letzteSicherung: 99 },
+  einstellungen: { ...STANDARD_EINSTELLUNGEN, markierungenVerbergen: true, letzteSicherung: 99 },
   fachvorlagen: [],
 };
 
@@ -94,6 +94,14 @@ describe('aufAktuellenStand', () => {
     expect(neu.nachweise[1].punkte).toEqual({ max: 40, schluessel: { grenzen: [92, 81, 67, 50, 30], tendenzen: true }, werte: {} });
     expect(neu.nachweise[0]).not.toHaveProperty('punkte');
     expect(neu.nachweise[0].noten).toEqual({ s: '2-' });
+  });
+
+  it('Markierungen sind sichtbar, wenn nichts anderes gespeichert ist', () => {
+    const roh = structuredClone(stand) as any;
+    delete roh.einstellungen.markierungenVerbergen;
+    expect(aufAktuellenStand(roh, 1).einstellungen.markierungenVerbergen).toBe(false);
+    roh.einstellungen.markierungenVerbergen = 'ja';
+    expect(aufAktuellenStand(roh, 1).einstellungen.markierungenVerbergen).toBe(false);
   });
 
   it('verwirft unbrauchbare Schlüsselvorlagen', () => {

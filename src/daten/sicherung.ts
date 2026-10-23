@@ -30,7 +30,10 @@ interface Sicherungsdatei {
   daten: string;
 }
 
-const ITERATIONEN = 600_000;
+/** Verfahren der Sicherung; die Datenschutz-Seite nennt dieselben Werte. */
+export const VERSCHLUESSELUNG = { verfahren: 'AES-GCM', schluesselBits: 256, ableitung: 'PBKDF2', hash: 'SHA-256', iterationen: 600_000 } as const;
+
+export const PASSWORT_MINDESTLAENGE = 6;
 
 function zuBase64(bytes: Uint8Array): string {
   let s = '';
@@ -46,11 +49,12 @@ function vonBase64(text: string): Uint8Array<ArrayBuffer> {
 }
 
 async function schluessel(passwort: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
-  const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(passwort), 'PBKDF2', false, ['deriveKey']);
+  const v = VERSCHLUESSELUNG;
+  const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(passwort), v.ableitung, false, ['deriveKey']);
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: ITERATIONEN, hash: 'SHA-256' },
+    { name: v.ableitung, salt, iterations: v.iterationen, hash: v.hash },
     basis,
-    { name: 'AES-GCM', length: 256 },
+    { name: v.verfahren, length: v.schluesselBits },
     false,
     ['encrypt', 'decrypt'],
   );
@@ -61,7 +65,7 @@ export async function verschluessele(stand: Datenstand, passwort: string): Promi
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const klartext = new TextEncoder().encode(JSON.stringify(stand));
-  const geheim = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await schluessel(passwort, salt), klartext);
+  const geheim = await crypto.subtle.encrypt({ name: VERSCHLUESSELUNG.verfahren, iv }, await schluessel(passwort, salt), klartext);
   const datei: Sicherungsdatei = {
     format: 'noten-app-sicherung',
     version: 1,
@@ -91,7 +95,7 @@ export async function entschluessele(dateiinhalt: string, passwort: string): Pro
   let klartext: ArrayBuffer;
   try {
     klartext = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: vonBase64(datei.iv) },
+      { name: VERSCHLUESSELUNG.verfahren, iv: vonBase64(datei.iv) },
       await schluessel(passwort, vonBase64(datei.salt)),
       vonBase64(datei.daten),
     );

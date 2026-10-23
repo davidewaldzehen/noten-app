@@ -103,6 +103,7 @@ export function ergaenzeEinstellungen(roh: unknown): Einstellungen {
           .filter((v: Roh) => istObjekt(v) && istText(v.name) && grenzenGueltig(v.grenzen))
           .map((v: Roh): Schluesselvorlage => ({ ...v, ...ergaenzeSchluessel(v) }))
       : structuredClone(s.schluesselvorlagen),
+    markierungenVerbergen: e.markierungenVerbergen === true,
     letzteSicherung: typeof e.letzteSicherung === 'number' ? e.letzteSicherung : null,
   };
 }

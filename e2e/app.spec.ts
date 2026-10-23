@@ -169,6 +169,28 @@ test('Klassenarbeit mit Punkten und Notenschlüssel', async ({ page }) => {
   await expect(page.getByRole('row', { name: /Mathe Sek I/ })).toContainText('1: 90 %');
 });
 
+test('Datenschutz-Seite und Markierungen verbergen am Beamer', async ({ page }) => {
+  await page.goto('./#/einstellungen');
+  await page.getByRole('link', { name: 'Datenschutz-Informationen' }).click();
+  await expect(page.getByRole('heading', { name: 'Datenschutz-Informationen zur Noten-App' })).toBeVisible();
+  await expect(page.getByText('verschlüsselt mit AES-256-GCM')).toBeVisible();
+  await expect(page.getByText('600.000 Durchläufe')).toBeVisible();
+  await expect(page.getByText('http://localhost:4173/')).toBeVisible();
+
+  await lerngruppeAnlegen(page);
+  await page.getByRole('button', { name: 'Markierungen verbergen' }).click();
+  await schueler(page, 'Anna').click();
+  await expect(page.getByRole('status')).toHaveText(/Festgehalten\./);
+  await expect(schueler(page, 'Anna')).toHaveText(/^\s*Anna\s*$/);
+  await expect(page.getByText('1 Beobachtung')).toBeVisible();
+
+  // Bleibt nach einem Neustart verborgen, bis es wieder eingeschaltet wird.
+  await page.reload();
+  await expect(schueler(page, 'Anna')).toHaveText(/^\s*Anna\s*$/);
+  await page.getByRole('button', { name: 'Markierungen zeigen' }).click();
+  await expect(schueler(page, 'Anna')).toContainText('+');
+});
+
 test('ein zurückgenommener Tipp hinterlässt keine offene Stunde', async ({ page }) => {
   await lerngruppeAnlegen(page);
 

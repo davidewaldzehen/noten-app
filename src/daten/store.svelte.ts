@@ -443,6 +443,11 @@ export function speichereEinstellungen() {
   db.meta.put({ schluessel: 'einstellungen', wert: snap(daten.einstellungen) }).catch(fehler);
 }
 
+export function markierungenUmschalten() {
+  daten.einstellungen.markierungenVerbergen = !daten.einstellungen.markierungenVerbergen;
+  speichereEinstellungen();
+}
+
 /** Speichert einen Notenschlüssel als Vorlage; eine Vorlage gleichen Namens wird ersetzt. */
 export function schluesselvorlageSpeichern(name: string, s: Notenschluessel) {
   const vorlage = { name: name.trim(), grenzen: [...s.grenzen], tendenzen: s.tendenzen };

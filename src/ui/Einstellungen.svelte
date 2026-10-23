@@ -1,11 +1,12 @@
 <script lang="ts">
   import { beispieldaten } from '../daten/beispiel';
   import { istIos, speichereDatei } from '../daten/export';
-  import { SicherungsFehler } from '../daten/sicherung';
+  import { PASSWORT_MINDESTLAENGE, SicherungsFehler } from '../daten/sicherung';
   import {
     daten,
     datenHinzufuegen,
     lerngruppeLoeschen,
+    markierungenUmschalten,
     schluesselvorlageLoeschen,
     schluesselvorlageVorbelegen,
     sicherungErstellen,
@@ -35,7 +36,7 @@
   let bereit = $state<string | null>(null);
 
   const passwortEingeben = $derived(!daten.sicherungspasswort || passwortAendern);
-  const passwortGueltig = $derived(passwort.length >= 6 && passwort === passwort2);
+  const passwortGueltig = $derived(passwort.length >= PASSWORT_MINDESTLAENGE && passwort === passwort2);
 
   async function sichern() {
     if (passwortEingeben && !passwortGueltig) return;
@@ -154,7 +155,7 @@
         <span class="leise">Im Menü „In Dateien sichern“ wählen, am besten in iCloud Drive.</span>
       </p>
     {/if}
-    {#if passwort && passwort.length < 6}<p class="leise">Mindestens 6 Zeichen.</p>{/if}
+    {#if passwort && passwort.length < PASSWORT_MINDESTLAENGE}<p class="leise">Mindestens {PASSWORT_MINDESTLAENGE} Zeichen.</p>{/if}
     {#if passwort2 && passwort !== passwort2}<p class="leise">Die Passwörter stimmen nicht überein.</p>{/if}
 
     <h3>Wiederherstellen</h3>
@@ -231,6 +232,15 @@
   </section>
 
   <section class="karte stapel">
+    <h2>Datenschutz</h2>
+    <label class="haken">
+      <input type="checkbox" checked={e.markierungenVerbergen} onchange={markierungenUmschalten} />
+      Markierungen verbergen, z. B. wenn das iPad an den Beamer gespiegelt wird (auch im Unterricht oben umschaltbar)
+    </label>
+    <p><a href="#/datenschutz">Datenschutz-Informationen</a> <span class="leise">– was die App speichert und wohin, zum Ausdrucken für die Schulleitung</span></p>
+  </section>
+
+  <section class="karte stapel">
     <h2>Ausprobieren und Aufräumen</h2>
     <div class="zeile">
       <button onclick={beispiel}>Beispiel-Lerngruppe erzeugen</button>
@@ -247,6 +257,12 @@
 
   .kurz {
     width: 100px;
+  }
+
+  .haken {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .r {

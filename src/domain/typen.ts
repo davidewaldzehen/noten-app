@@ -176,6 +176,8 @@ export interface Einstellungen {
   grenzfallBreite: number;
   /** Gespeicherte Notenschlüssel; der erste ist die Vorbelegung für neue Punkteerfassungen. */
   schluesselvorlagen: Schluesselvorlage[];
+  /** Blendet Beobachtungen und Hinweise aus, z. B. wenn das Gerät an einen Beamer gespiegelt wird. */
+  markierungenVerbergen: boolean;
   /** Zeitpunkt der letzten Sicherung (ms) oder null. */
   letzteSicherung: number | null;
 }
@@ -195,6 +197,7 @@ export const STANDARD_EINSTELLUNGEN: Einstellungen = {
   haeufungTage: 14,
   grenzfallBreite: 0.1,
   schluesselvorlagen: [{ name: 'Standard', ...STANDARD_NOTENSCHLUESSEL }],
+  markierungenVerbergen: false,
   letzteSicherung: null,
 };
 
