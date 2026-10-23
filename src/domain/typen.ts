@@ -64,6 +64,14 @@ export interface Zeugnisnoteneintrag {
   begruendung?: string;
 }
 
+/** Freitext der Lehrkraft zu einem Schüler in einer Lerngruppe. Fließt nie in die Note ein. */
+export interface Notiz {
+  id: Id;
+  schuelerId: Id;
+  datum: Datum;
+  text: string;
+}
+
 export interface Lerngruppe {
   id: Id;
   name: string;
@@ -82,6 +90,7 @@ export interface Lerngruppe {
     hj1: Record<Id, Zeugnisnoteneintrag>;
     jahr: Record<Id, Zeugnisnoteneintrag>;
   };
+  notizen: Notiz[];
   archiviert: boolean;
   zuletztBenutzt: number;
 }

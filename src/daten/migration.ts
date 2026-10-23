@@ -11,6 +11,7 @@ import {
   type Einstellungen,
   type Leistungsnachweis,
   type Lerngruppe,
+  type Notiz,
   type Schueler,
   type Stufe,
   type Stunde,
@@ -125,9 +126,15 @@ function ergaenzeLerngruppe(lg: Roh): Lerngruppe {
       hj1: istObjekt(lg.zeugnisnoten?.hj1) ? lg.zeugnisnoten.hj1 : {},
       jahr: istObjekt(lg.zeugnisnoten?.jahr) ? lg.zeugnisnoten.jahr : {},
     },
+    notizen: (Array.isArray(lg.notizen) ? lg.notizen : []).map(ergaenzeNotiz),
     archiviert: lg.archiviert === true,
     zuletztBenutzt: zahlOder(lg.zuletztBenutzt, 0),
   };
+}
+
+function ergaenzeNotiz(n: Roh): Notiz {
+  pruefe(istObjekt(n) && istText(n.id) && istText(n.schuelerId) && istDatum(n.datum), 'Notiz unvollständig');
+  return { ...n, text: istText(n.text) ? n.text : '' };
 }
 
 function ergaenzeStunde(s: Roh): Stunde {

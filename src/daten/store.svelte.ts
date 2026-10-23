@@ -185,6 +185,7 @@ export function lerngruppeAnlegen(name: string, fach: string, schuljahr = schulj
     mitglieder: [],
     sitzplan: sitzplanAus('reihen', 30),
     zeugnisnoten: { hj1: {}, jahr: {} },
+    notizen: [],
     archiviert: false,
     zuletztBenutzt: Date.now(),
   };
@@ -354,6 +355,32 @@ export function zeugnisnoteSetzen(lg: Lerngruppe, zeitraum: 'hj1' | 'jahr', schu
   if (note === undefined) delete lg.zeugnisnoten[zeitraum][schuelerId];
   else lg.zeugnisnoten[zeitraum][schuelerId] = { note, begruendung: begruendung?.trim() || undefined };
   speichereLerngruppe(lg);
+}
+
+// ---------- Notizen ----------
+
+export function notizHinzufuegen(lg: Lerngruppe, schuelerId: Id, datum: string, text: string) {
+  lg.notizen.push({ id: neueId(), schuelerId, datum, text: text.trim() });
+  speichereLerngruppe(lg);
+}
+
+export function notizAendern(lg: Lerngruppe, id: Id, text: string) {
+  const n = lg.notizen.find((x) => x.id === id);
+  if (!n) return;
+  n.text = text.trim();
+  speichereLerngruppe(lg);
+}
+
+/** Löscht eine Notiz und bietet „Rückgängig“ an. */
+export function notizLoeschen(lg: Lerngruppe, id: Id) {
+  const i = lg.notizen.findIndex((x) => x.id === id);
+  if (i < 0) return;
+  const [weg] = lg.notizen.splice(i, 1);
+  speichereLerngruppe(lg);
+  zeigeSnackbar('Notiz gelöscht.', () => {
+    lg.notizen.splice(i, 0, weg);
+    speichereLerngruppe(lg);
+  });
 }
 
 // ---------- Einstellungen ----------

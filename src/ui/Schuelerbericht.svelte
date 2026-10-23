@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { daten, nachweiseVon, schuelerMitId, stundenVon } from '../daten/store.svelte';
+  import { daten, nachweiseVon, notizAendern, notizHinzufuegen, notizLoeschen, schuelerMitId, stundenVon } from '../daten/store.svelte';
   import { heute, kurzdatum, langdatum, zeitraumVon } from '../domain/datum';
+  import { notizenZu } from '../domain/notizen';
   import { berechneNoten, eindrucksverteilung, formatNote, formatNotentext, parseNote } from '../domain/noten';
   import { STUFEN, type Bewertungszeitraum, type Id, type Lerngruppe, type Verhaltensbeobachtung } from '../domain/typen';
   import { STUFEN_ANZEIGE } from '../domain/vorschlag';
@@ -21,6 +22,16 @@
 
   function stundenIm(z: Bewertungszeitraum) {
     return stunden.filter((st) => zeitraumVon(st.datum, lg.beginnHj2) === z);
+  }
+
+  const notizen = $derived(notizenZu(lg.notizen, schuelerId));
+  let neueNotiz = $state('');
+  let notizDatum = $state(heute());
+
+  function notizSpeichern() {
+    if (!neueNotiz.trim()) return;
+    notizHinzufuegen(lg, schuelerId, notizDatum || heute(), neueNotiz);
+    neueNotiz = '';
   }
 
   function datumVonZeit(zeit: number) {
@@ -149,6 +160,30 @@
         </table>
       {/if}
     </section>
+
+    <section class="karte stapel">
+      <h2>Notizen <span class="leise">(fließen nicht in die Note ein)</span></h2>
+      {#if notizen.length === 0}
+        <p class="leise">Keine Notizen.</p>
+      {/if}
+      {#each notizen as n (n.id)}
+        <div class="notiz">
+          <span class="leise zahl">{langdatum(n.datum)}</span>
+          <p class:nur-druck={!lg.archiviert}>{n.text}</p>
+          {#if !lg.archiviert}
+            <textarea class="notiztext nicht-drucken" aria-label={`Notiz vom ${langdatum(n.datum)}`} value={n.text} onchange={(ev) => notizAendern(lg, n.id, ev.currentTarget.value)}></textarea>
+            <button class="klein nicht-drucken" onclick={() => notizLoeschen(lg, n.id)}>Löschen</button>
+          {/if}
+        </div>
+      {/each}
+      {#if !lg.archiviert}
+        <div class="zeile unten nicht-drucken">
+          <label>Datum <input type="date" bind:value={notizDatum} /></label>
+          <label class="breit">Neue Notiz <textarea rows="2" bind:value={neueNotiz} placeholder="z. B. Elterngespräch mit der Mutter, Absprache: Hausaufgaben täglich abzeichnen"></textarea></label>
+          <button onclick={notizSpeichern} disabled={!neueNotiz.trim()}>Notiz hinzufügen</button>
+        </div>
+      {/if}
+    </section>
   </div>
 {:else}
   <p class="seite">Schüler nicht gefunden.</p>
@@ -197,6 +232,33 @@
   .tag small {
     color: var(--text-2);
     font-size: 0.7rem;
+  }
+
+  .notiz {
+    display: grid;
+    grid-template-columns: 9rem 1fr auto;
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .notiz p {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  .notiztext {
+    min-height: 2.6rem;
+    width: 100%;
+    field-sizing: content;
+  }
+
+  .breit {
+    flex: 1;
+  }
+
+  .breit textarea {
+    width: 100%;
+    min-height: 4.5rem;
   }
 
   @media print {

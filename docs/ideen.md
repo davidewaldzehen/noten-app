@@ -2,10 +2,6 @@
 
 Vorschläge aus dem Review vom 23.10.2026, noch nicht umgesetzt. Reihenfolge = vorgeschlagene Priorität.
 
-## Notizen pro Schüler
-
-Freitext zu einem Schüler in einer Lerngruppe (Elterngespräch, Förderplan, Absprachen), mit Datum. Erscheint im Schülerbericht. Fließt nie in die Note ein.
-
 ## Lerngruppe ins neue Schuljahr übernehmen
 
 Bisher gibt es am Schuljahresende nur „Archivieren“; im August müsste jede Lerngruppe neu angelegt werden. Ein Knopf „Ins neue Schuljahr übernehmen“ legt eine neue Lerngruppe an mit denselben Schülern, demselben Sitzplan, denselben Notenbereichen und Verhaltenskategorien, aber ohne Stunden, Beobachtungen und Leistungsnachweise. Die alte wird archiviert.

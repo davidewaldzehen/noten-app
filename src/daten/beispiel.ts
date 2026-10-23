@@ -40,6 +40,7 @@ export function beispieldaten() {
     mitglieder: schueler.map((s) => ({ schuelerId: s.id, ausgeschieden: false })),
     sitzplan: verteile(sitzplanAus('reihen', schueler.length), schueler.map((s) => s.id)),
     zeugnisnoten: { hj1: {}, jahr: {} },
+    notizen: [],
     archiviert: false,
     zuletztBenutzt: Date.now(),
   };

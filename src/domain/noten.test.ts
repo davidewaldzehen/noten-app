@@ -37,6 +37,7 @@ const lerngruppe: Lerngruppe = {
   mitglieder: [],
   sitzplan: { spalten: 1, reihen: 1, plaetze: [], tafelOben: true },
   zeugnisnoten: { hj1: {}, jahr: {} },
+  notizen: [],
   archiviert: false,
   zuletztBenutzt: 0,
 };

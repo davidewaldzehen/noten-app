@@ -72,8 +72,12 @@ _Avoid_: Backup, Export (Export meint Ausgaben für Menschen, nicht zur Wiederhe
 Eine druckbare Übersicht einer Lerngruppe für einen Bewertungszeitraum: pro Schüler die Noten der Notenbereiche, die Fachnote und die Zeugnisnote. Vorlage zum Übertragen nach WebUntis und für die Zeugniskonferenz.
 
 **Schülerbericht**:
-Eine druckbare Seite zu einem Schüler in einer Lerngruppe: Verlauf der Stundeneindrücke, Leistungsnachweise, Verhaltensbeobachtungen und Begründung der Zeugnisnote. Unterlage für Elterngespräche.
+Eine druckbare Seite zu einem Schüler in einer Lerngruppe: Verlauf der Stundeneindrücke, Leistungsnachweise, Verhaltensbeobachtungen, Notizen und Begründung der Zeugnisnote. Unterlage für Elterngespräche.
 _Avoid_: Schülerprofil, Akte
+
+**Notiz**:
+Ein datierter Freitext der Lehrkraft zu einem Schüler in einer Lerngruppe (z. B. Elterngespräch, Förderplan, Absprache). Erscheint im Schülerbericht und fließt nie in die Note ein.
+_Avoid_: Kommentar, Bemerkung, Beobachtung (das ist ein Eintrag aus dem Unterricht)
 
 **Fachvorlage**:
 Die Standard-Notenbereiche und -gewichte eines Fachs, die neue Lerngruppen dieses Fachs übernehmen.

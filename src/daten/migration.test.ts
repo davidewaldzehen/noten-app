@@ -15,6 +15,7 @@ const lerngruppe: Lerngruppe = {
   mitglieder: [{ schuelerId: 's', ausgeschieden: false }],
   sitzplan: { spalten: 1, reihen: 1, plaetze: [{ spalte: 0, reihe: 0, schuelerId: 's' }], tafelOben: false },
   zeugnisnoten: { hj1: { s: { note: 2 } }, jahr: {} },
+  notizen: [{ id: 'no', schuelerId: 's', datum: '2026-10-22', text: 'Elterngespräch: Mutter, Förderplan Lesen' }],
   archiviert: false,
   zuletztBenutzt: 5,
 };
@@ -60,6 +61,7 @@ describe('aufAktuellenStand', () => {
       notenbereiche: [],
       mitglieder: [],
       zeugnisnoten: { hj1: {}, jahr: {} },
+      notizen: [],
       archiviert: false,
       extra: 'bleibt',
     });
@@ -95,6 +97,7 @@ describe('aufAktuellenStand', () => {
     expect(() => aufAktuellenStand(null, 1)).toThrow(DatenFehler);
     expect(() => aufAktuellenStand({ ...stand, stunden: undefined }, 1)).toThrow(DatenFehler);
     expect(() => aufAktuellenStand({ ...stand, stunden: [{ id: 'x', lerngruppeId: 'lg' }] }, 1)).toThrow(DatenFehler);
+    expect(() => aufAktuellenStand({ ...stand, lerngruppen: [{ ...lerngruppe, notizen: [{ id: 'x', text: 'ohne Schüler' }] }] }, 1)).toThrow(DatenFehler);
     expect(() => aufAktuellenStand({ ...stand, schueler: [{ vorname: 'ohne Id' }] }, 1)).toThrow(DatenFehler);
     expect(() => aufAktuellenStand({ ...stand, beobachtungen: [{ ...stand.beobachtungen[0], art: 'unbekannt' }] }, 1)).toThrow(DatenFehler);
   });

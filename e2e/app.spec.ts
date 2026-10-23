@@ -66,6 +66,36 @@ test('Notenübersicht zeigt, wie viele Stunden hinter der Mündlichen Note stehe
   await expect(page.getByText('1 gewertete Stunden')).toBeVisible();
 });
 
+test('Notiz zu einem Schüler im Schülerbericht', async ({ page }) => {
+  await lerngruppeAnlegen(page);
+  await page.getByRole('link', { name: 'Noten' }).click();
+  await page.getByRole('link', { name: 'Müller, Anna' }).click();
+  await expect(page.getByText('Keine Notizen.')).toBeVisible();
+
+  await page.getByLabel('Datum').fill('2026-10-22');
+  await page.getByLabel('Neue Notiz').fill('Elterngespräch: Förderplan Lesen vereinbart');
+  await page.getByRole('button', { name: 'Notiz hinzufügen' }).click();
+  const notiz = page.getByLabel('Notiz vom 22.10.2026');
+  await expect(notiz).toHaveValue('Elterngespräch: Förderplan Lesen vereinbart');
+
+  await notiz.fill('Elterngespräch: Förderplan Lesen, Termin im Januar');
+  await notiz.blur();
+  await page.reload();
+  await expect(page.getByLabel('Notiz vom 22.10.2026')).toHaveValue('Elterngespräch: Förderplan Lesen, Termin im Januar');
+
+  await page.getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.getByText('Keine Notizen.')).toBeVisible();
+  await page.getByRole('button', { name: 'Rückgängig' }).click();
+  await expect(page.getByLabel('Notiz vom 22.10.2026')).toBeVisible();
+
+  // Notizen gehören zu dieser Lerngruppe und zu diesem Schüler.
+  await page.goto('./');
+  await page.getByRole('link', { name: /7a Mathe/ }).click();
+  await page.getByRole('link', { name: 'Noten' }).click();
+  await page.getByRole('link', { name: 'Schulz, Ben' }).click();
+  await expect(page.getByText('Keine Notizen.')).toBeVisible();
+});
+
 test('ein zurückgenommener Tipp hinterlässt keine offene Stunde', async ({ page }) => {
   await lerngruppeAnlegen(page);
 
