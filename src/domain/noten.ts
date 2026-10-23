@@ -71,6 +71,27 @@ export function muendlicheNote(
   return gewichteterSchnitt(werte);
 }
 
+export interface Eindrucksverteilung {
+  /** Zahl der Stunden mit Stundeneindruck, also der Stunden, die in die Mündliche Note eingehen. */
+  gewertet: number;
+  stufen: Record<Stufe, number>;
+  abwesend: number;
+}
+
+/** Wie viele Stunden hinter einer Mündlichen Note stehen und wie sich die Stufen verteilen. */
+export function eindrucksverteilung(stunden: Stunde[], schuelerId: Id): Eindrucksverteilung {
+  const v: Eindrucksverteilung = { gewertet: 0, stufen: { '++': 0, '+': 0, o: 0, '-': 0, '--': 0 }, abwesend: 0 };
+  for (const stunde of stunden) {
+    if (!stunde.abgeschlossen) continue;
+    const e = stunde.eindruecke[schuelerId];
+    if (e?.art === 'stufe') {
+      v.gewertet++;
+      v.stufen[e.stufe]++;
+    } else if (e?.art === 'abwesend') v.abwesend++;
+  }
+  return v;
+}
+
 /** Note eines Notenbereichs aus Leistungsnachweisen: gewichteter Durchschnitt der gültigen Noten. */
 export function nachweisNote(nachweise: Leistungsnachweis[], schuelerId: Id): number | undefined {
   const werte: Gewichtet[] = [];

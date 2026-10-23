@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   berechneNoten,
+  eindrucksverteilung,
   fachnote,
   istGrenzfall,
   jahresnote,
@@ -86,6 +87,25 @@ describe('muendlicheNote', () => {
   it('offene Stunden zählen nicht', () => {
     const offen = { ...stunde('2026-09-01', { tom: { art: 'stufe', stufe: '--' } }), abgeschlossen: false };
     expect(muendlicheNote([offen], 'tom', stufenNoten)).toBeUndefined();
+  });
+});
+
+describe('eindrucksverteilung', () => {
+  it('zählt gewertete Stunden je Stufe, Doppelstunden einfach', () => {
+    const stunden = [
+      stunde('2026-09-01', { mia: { art: 'stufe', stufe: 'o' } }, 2),
+      stunde('2026-09-02', { mia: { art: 'stufe', stufe: '+' } }),
+      stunde('2026-09-03', { mia: { art: 'stufe', stufe: 'o' } }),
+      stunde('2026-09-04', { mia: { art: 'abwesend' } }),
+      stunde('2026-09-05', { mia: { art: 'ohne' } }),
+      stunde('2026-09-06', { tom: { art: 'stufe', stufe: '--' } }),
+      { ...stunde('2026-09-07', { mia: { art: 'stufe', stufe: '++' } }), abgeschlossen: false },
+    ];
+    expect(eindrucksverteilung(stunden, 'mia')).toEqual({
+      gewertet: 3,
+      stufen: { '++': 0, '+': 1, o: 2, '-': 0, '--': 0 },
+      abwesend: 1,
+    });
   });
 });
 

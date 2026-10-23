@@ -2,10 +2,6 @@
 
 Vorschläge aus dem Review vom 23.10.2026, noch nicht umgesetzt. Reihenfolge = vorgeschlagene Priorität.
 
-## Anzahl der Stunden hinter einer Note zeigen
-
-In der Notenübersicht sieht eine Mündliche Note aus 4 Stunden genauso sicher aus wie eine aus 30. Pro Schüler die Zahl der gewerteten Stunden anzeigen, dazu die Verteilung (++ / + / ○ / − / −−). Hilft bei Grenzfällen und im Elterngespräch und macht sichtbar, dass stille Schüler durch die Vorbelegung ○ Richtung 3 wandern.
-
 ## Notizen pro Schüler
 
 Freitext zu einem Schüler in einer Lerngruppe (Elterngespräch, Förderplan, Absprachen), mit Datum. Erscheint im Schülerbericht. Fließt nie in die Note ein.

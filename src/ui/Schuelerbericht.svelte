@@ -1,7 +1,7 @@
 <script lang="ts">
   import { daten, nachweiseVon, schuelerMitId, stundenVon } from '../daten/store.svelte';
   import { heute, kurzdatum, langdatum, zeitraumVon } from '../domain/datum';
-  import { berechneNoten, formatNote, formatNotentext, parseNote } from '../domain/noten';
+  import { berechneNoten, eindrucksverteilung, formatNote, formatNotentext, parseNote } from '../domain/noten';
   import { STUFEN, type Bewertungszeitraum, type Id, type Lerngruppe, type Verhaltensbeobachtung } from '../domain/typen';
   import { STUFEN_ANZEIGE } from '../domain/vorschlag';
   import Kopf from './Kopf.svelte';
@@ -21,14 +21,6 @@
 
   function stundenIm(z: Bewertungszeitraum) {
     return stunden.filter((st) => zeitraumVon(st.datum, lg.beginnHj2) === z);
-  }
-
-  function verteilung(z: Bewertungszeitraum) {
-    const eindruecke = stundenIm(z).map((st) => st.eindruecke[schuelerId]);
-    return {
-      stufen: STUFEN.map((st) => ({ st, n: eindruecke.filter((x) => x.art === 'stufe' && x.stufe === st).length })),
-      abwesend: eindruecke.filter((x) => x.art === 'abwesend').length,
-    };
   }
 
   function datumVonZeit(zeit: number) {
@@ -93,11 +85,11 @@
       {#each ['hj1', 'hj2'] as const as z}
         {@const liste = stundenIm(z)}
         {#if liste.length > 0}
-          {@const v = verteilung(z)}
-          <h3>{z === 'hj1' ? '1. Halbjahr' : '2. Halbjahr'}</h3>
+          {@const v = eindrucksverteilung(liste, schuelerId)}
+          <h3>{z === 'hj1' ? '1. Halbjahr' : '2. Halbjahr'} <span class="leise">({v.gewertet} gewertete Stunden)</span></h3>
           <p class="zeile">
-            {#each v.stufen as { st, n }}
-              <span class={`marke ${stufenKlasse(st)}`}>{STUFEN_ANZEIGE[st]} × {n}</span>
+            {#each STUFEN as st}
+              <span class={`marke ${stufenKlasse(st)}`}>{STUFEN_ANZEIGE[st]} × {v.stufen[st]}</span>
             {/each}
             <span class="leise">abwesend × {v.abwesend}</span>
           </p>
@@ -167,7 +159,8 @@
     margin-bottom: 0.2rem;
   }
 
-  section h2 .leise {
+  section h2 .leise,
+  section h3 .leise {
     font-weight: 400;
   }
 

@@ -2,11 +2,13 @@
   import { untrack } from 'svelte';
   import { alsCsv, speichereDatei } from '../daten/export';
   import { ausgeschiedene, daten, mitglieder, nachweiseVon, stundenVon, zeigeSnackbar, zeugnisnoteSetzen } from '../daten/store.svelte';
-  import { heute, langdatum } from '../domain/datum';
-  import { berechneNoten, formatNote, istGrenzfall, rundungsvorschlag, type Notenergebnis } from '../domain/noten';
+  import { heute, langdatum, zeitraumVon } from '../domain/datum';
+  import { berechneNoten, eindrucksverteilung, formatNote, istGrenzfall, rundungsvorschlag, type Eindrucksverteilung, type Notenergebnis } from '../domain/noten';
   import { nachNameSortiert } from '../domain/sitzplan';
-  import type { Id, Lerngruppe, Schueler } from '../domain/typen';
+  import { STUFEN, type Id, type Lerngruppe, type Schueler } from '../domain/typen';
+  import { STUFEN_ANZEIGE } from '../domain/vorschlag';
   import Kopf from './Kopf.svelte';
+  import { stufenKlasse } from './stufen';
 
   let { lg }: { lg: Lerngruppe } = $props();
 
@@ -24,7 +26,10 @@
     ausgeschieden: boolean;
     e: Notenergebnis;
     note: number | undefined;
+    verteilung: Eindrucksverteilung;
   }
+
+  const mitMuendlich = $derived(lg.notenbereiche.some((b) => b.art === 'muendlich'));
 
   const zeilen = $derived.by((): Zeile[] => {
     const stunden = stundenVon(lg.id);
@@ -33,9 +38,11 @@
       ...nachNameSortiert(mitglieder(lg)).map((s) => ({ s, ausgeschieden: false })),
       ...nachNameSortiert(ausgeschiedene(lg)).map((s) => ({ s, ausgeschieden: true })),
     ];
+    const stundenDerAnsicht = ansicht === 'jahr' ? stunden : stunden.filter((st) => zeitraumVon(st.datum, lg.beginnHj2) === ansicht);
     return liste.map(({ s, ausgeschieden }) => {
       const e = berechneNoten(lg, stunden, nachweise, daten.einstellungen.stufenNoten, s.id);
-      return { s, ausgeschieden, e, note: ansicht === 'jahr' ? e.jahr : e[ansicht].fachnote };
+      const verteilung = eindrucksverteilung(stundenDerAnsicht, s.id);
+      return { s, ausgeschieden, e, note: ansicht === 'jahr' ? e.jahr : e[ansicht].fachnote, verteilung };
     });
   });
 
@@ -72,12 +79,14 @@
     const kopf = ['Nachname', 'Vorname', 'Klasse'];
     if (ansicht === 'jahr') kopf.push('Fachnote 1. HJ', 'Fachnote 2. HJ', 'Jahresnote');
     else kopf.push(...bereiche.map((b) => b.name), 'Fachnote');
+    if (mitMuendlich) kopf.push('Stunden', ...STUFEN.map((st) => STUFEN_ANZEIGE[st]));
     if (zeugnis) kopf.push('Vorschlag', 'Zeugnisnote', 'Begründung');
     const runde = (x: number | undefined) => (x === undefined ? undefined : Math.round(x * 100) / 100);
     const daten_ = zeilen.map((z) => {
       const zeile: (string | number | undefined)[] = [z.s.nachname, z.s.vorname, z.s.klasse + (z.ausgeschieden ? ' (ausgeschieden)' : '')];
       if (ansicht === 'jahr') zeile.push(runde(z.e.hj1.fachnote), runde(z.e.hj2.fachnote), runde(z.e.jahr));
       else zeile.push(...bereiche.map((b) => runde(z.e[ansicht as 'hj1' | 'hj2'].bereiche[b.id])), runde(z.note));
+      if (mitMuendlich) zeile.push(z.verteilung.gewertet, ...STUFEN.map((st) => z.verteilung.stufen[st]));
       if (zeugnis) {
         const zn = zeugnisnote(z.s.id);
         zeile.push(z.note === undefined ? undefined : rundungsvorschlag(z.note), zn?.note, zn?.begruendung);
@@ -130,6 +139,7 @@
             {#each lg.notenbereiche as b (b.id)}<th class="r">{b.name}</th>{/each}
             <th class="r">Fachnote</th>
           {/if}
+          {#if mitMuendlich}<th>Stunden</th>{/if}
           {#if zeugnis}
             <th class="r">Vorschlag</th>
             <th>Zeugnisnote</th>
@@ -157,6 +167,14 @@
               {/each}
               <td class="r zahl"><strong>{formatNote(z.note)}</strong></td>
             {/if}
+            {#if mitMuendlich}
+              <td class="stunden">
+                <span class="zahl gewertet">{z.verteilung.gewertet}</span>
+                <span class="verteilung">
+                  {#each STUFEN as st}<span class={`anteil ${stufenKlasse(st)}`} class:leer={z.verteilung.stufen[st] === 0} title={STUFEN_ANZEIGE[st]}>{z.verteilung.stufen[st]}</span>{/each}
+                </span>
+              </td>
+            {/if}
             {#if zeugnis}
               <td class="r zahl">{vorschlag ?? '–'}{#if grenzfall}<span class="grenz" title="Grenzfall"> ⚠︎</span>{/if}</td>
               <td>
@@ -182,6 +200,12 @@
       </tbody>
     </table>
   </div>
+  {#if mitMuendlich}
+    <p class="leise">
+      Stunden = gewertete Stunden (mit Stundeneindruck) {ansicht === 'jahr' ? 'im Schuljahr' : 'im Halbjahr'}, dahinter wie oft
+      {STUFEN.map((st) => STUFEN_ANZEIGE[st]).join(' / ')}.
+    </p>
+  {/if}
   {#if zeugnis}
     <p class="leise nicht-drucken">
       ⚠︎ = Grenzfall (Fachnote liegt höchstens {String(daten.einstellungen.grenzfallBreite).replace('.', ',')} von x,5 entfernt). x,5 wird zur schlechteren Note gerundet. Die Zeugnisnote
@@ -198,6 +222,39 @@
 
   .r {
     text-align: right;
+  }
+
+  .stunden {
+    white-space: nowrap;
+  }
+
+  .gewertet {
+    display: inline-block;
+    min-width: 2ch;
+    text-align: right;
+    font-weight: 600;
+  }
+
+  .verteilung {
+    margin-left: 0.4rem;
+    font-size: 0.8rem;
+  }
+
+  .anteil {
+    display: inline-block;
+    min-width: 1.6em;
+    margin-right: 1px;
+    padding: 0 0.2em;
+    border-radius: 4px;
+    text-align: center;
+    color: var(--s);
+    background: var(--s-hell);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .anteil.leer {
+    opacity: 0.35;
   }
 
   .ausgeschieden {

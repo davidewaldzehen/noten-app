@@ -46,6 +46,26 @@ test('Stunde erfassen, abschließen und benoten', async ({ page }) => {
   await expect(page.getByRole('row', { name: /Wolf, Clara/ })).not.toContainText(',00');
 });
 
+test('Notenübersicht zeigt, wie viele Stunden hinter der Mündlichen Note stehen', async ({ page }) => {
+  await lerngruppeAnlegen(page);
+  await schueler(page, 'Anna').click();
+  await page.getByRole('button', { name: 'Stunde abschließen' }).click();
+  await schueler(page, 'Clara').click();
+  await page.getByRole('button', { name: 'abwesend', exact: true }).click();
+  await page.getByRole('button', { name: 'Alle bestätigen' }).click();
+
+  await page.getByRole('link', { name: 'Noten' }).click();
+  await page.locator('select').first().selectOption('jahr');
+  const stunden = (name: RegExp) => page.getByRole('row', { name }).locator('.stunden');
+  // gewertete Stunden, dann ++ / + / ○ / − / −−
+  await expect(stunden(/Müller, Anna/)).toHaveText(/^\s*1\s+0\s*1\s*0\s*0\s*0\s*$/);
+  await expect(stunden(/Schulz, Ben/)).toHaveText(/^\s*1\s+0\s*0\s*1\s*0\s*0\s*$/);
+  await expect(stunden(/Wolf, Clara/)).toHaveText(/^\s*0\s+0\s*0\s*0\s*0\s*0\s*$/);
+
+  await page.getByRole('link', { name: 'Müller, Anna' }).click();
+  await expect(page.getByText('1 gewertete Stunden')).toBeVisible();
+});
+
 test('ein zurückgenommener Tipp hinterlässt keine offene Stunde', async ({ page }) => {
   await lerngruppeAnlegen(page);
 
