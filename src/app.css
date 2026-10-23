@@ -1,0 +1,303 @@
+:root {
+  --bg: #f4f5f2;
+  --flaeche: #ffffff;
+  --flaeche-2: #eceee9;
+  --rand: #d5d9d2;
+  --text: #1d2420;
+  --text-2: #5d6861;
+  --akzent: #1f6f5c;
+  --akzent-text: #ffffff;
+  --akzent-hell: #dcefe8;
+  --gefahr: #b3261e;
+  --warnung: #9a6400;
+  --warnung-hell: #fff3d6;
+  --s-pp: #13734f;
+  --s-p: #4f9e5d;
+  --s-o: #8a948e;
+  --s-m: #d4802a;
+  --s-mm: #c0392b;
+  --s-pp-hell: #cdeedd;
+  --s-p-hell: #e2f3e1;
+  --s-o-hell: #eef0ec;
+  --s-m-hell: #fbe7d2;
+  --s-mm-hell: #f8d6d2;
+  --radius: 10px;
+  --schatten: 0 1px 2px rgb(0 0 0 / 0.08), 0 2px 8px rgb(0 0 0 / 0.05);
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151917;
+    --flaeche: #1f2522;
+    --flaeche-2: #29302c;
+    --rand: #3a433e;
+    --text: #e8ece9;
+    --text-2: #a3ada7;
+    --akzent: #4fb394;
+    --akzent-text: #0d1a15;
+    --akzent-hell: #1f3a31;
+    --gefahr: #ff8a80;
+    --warnung: #f0b84a;
+    --warnung-hell: #3a2f16;
+    --s-pp-hell: #1c4434;
+    --s-p-hell: #233c27;
+    --s-o-hell: #2a302d;
+    --s-m-hell: #4a3420;
+    --s-mm-hell: #4c2420;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 1.4rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+a {
+  color: var(--akzent);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  border-radius: 8px;
+  padding: 0.55em 0.9em;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+button:active {
+  filter: brightness(0.93);
+}
+
+button.primaer {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+button.gefahr {
+  color: var(--gefahr);
+}
+
+button.klein {
+  min-height: 34px;
+  padding: 0.3em 0.7em;
+  font-size: 0.9rem;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+input,
+select,
+textarea {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  padding: 0.5em 0.6em;
+  min-height: 44px;
+}
+
+input[type='checkbox'] {
+  min-height: auto;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--akzent);
+}
+
+textarea {
+  width: 100%;
+  min-height: 140px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+label > input,
+label > select {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.45em 0.6em;
+  border-bottom: 1px solid var(--rand);
+  vertical-align: middle;
+}
+
+th {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.karte {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--schatten);
+}
+
+.seite {
+  padding: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.zeile {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stapel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.stapel > p,
+.stapel > h2 {
+  margin: 0;
+}
+
+.leise {
+  color: var(--text-2);
+  font-size: 0.9rem;
+}
+
+.zahl {
+  font-variant-numeric: tabular-nums;
+}
+
+.hinweis {
+  background: var(--warnung-hell);
+  border: 1px solid var(--warnung);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.dialog {
+  background: var(--flaeche);
+  border-radius: 14px;
+  padding: 1.2rem;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.3);
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.stufe-pp { --s: var(--s-pp); --s-hell: var(--s-pp-hell); }
+.stufe-p { --s: var(--s-p); --s-hell: var(--s-p-hell); }
+.stufe-o { --s: var(--s-o); --s-hell: var(--s-o-hell); }
+.stufe-m { --s: var(--s-m); --s-hell: var(--s-m-hell); }
+.stufe-mm { --s: var(--s-mm); --s-hell: var(--s-mm-hell); }
+
+.nur-druck {
+  display: none;
+}
+
+@media print {
+  :root {
+    --bg: #fff;
+    --flaeche: #fff;
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    font-size: 11pt;
+  }
+  .nicht-drucken {
+    display: none !important;
+  }
+  .nur-druck {
+    display: block;
+  }
+  .karte {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+  .seite {
+    max-width: none;
+    padding: 0;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}
